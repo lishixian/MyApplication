@@ -64,4 +64,7 @@ $ git merge work
 提交到远程主干
 $ git push
 这样做的好处是，远程主干上的历史永远是线性的。每个人在本地分支解决冲突，不会在主干上产生冲突。
+
+解决gitk中文乱码问题
+git config --global gui.encoding utf-8
 ```
