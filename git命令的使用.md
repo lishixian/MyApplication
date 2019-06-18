@@ -67,4 +67,6 @@ $ git push
 
 解决gitk中文乱码问题
 git config --global gui.encoding utf-8
+
+001
 ```
