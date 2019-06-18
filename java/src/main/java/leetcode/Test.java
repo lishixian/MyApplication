@@ -2,11 +2,59 @@ package leetcode;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 public class Test {
 
     public static void main(String[] args) {
-        twoSum();
+        //twoSum();
+        lengthOfLongestSubstring();
+    }
+
+
+    /**
+     * Given a string, find the length of the longest substring without repeating characters.
+     * <p>
+     * Example 1:
+     * <p>
+     * Input: "abcabcbb"
+     * Output: 3
+     * Explanation: The answer is "abc", with the length of 3.
+     * Example 2:
+     * <p>
+     * Input: "bbbbb"
+     * Output: 1
+     * Explanation: The answer is "b", with the length of 1.
+     * Example 3:
+     * <p>
+     * Input: "pwwkew"
+     * Output: 3
+     * Explanation: The answer is "wke", with the length of 3.
+     * Note that the answer must be a substring, "pwke" is a subsequence and not a substring.
+     */
+    public static void lengthOfLongestSubstring() {
+        String str = "abcabcbb";
+        lengthOfLongestSubstring(str);
+    }
+
+    public static int lengthOfLongestSubstring(String s) {
+        int start = 0, max = 0;
+        String str = "";
+        Map<Character, Integer> map = new HashMap<>();
+
+        for (int i = 0, length = s.length(); i < length; i++) {
+            char ch = s.charAt(i);
+            if (map.containsKey(ch)) {
+                start = Math.max(map.get(ch) + 1, start);
+            }
+            if (max < i - start + 1) {
+                max = i - start + 1;
+                str = s.substring(start, i + 1);
+            }
+            map.put(ch, i);
+        }
+        System.out.println("max:" + max + ",str:" + str);
+        return max;
     }
 
     /**
