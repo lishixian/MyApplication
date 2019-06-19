@@ -5,10 +5,57 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Test {
-
     public static void main(String[] args) {
         //twoSum();
-        lengthOfLongestSubstring();
+        //lengthOfLongestSubstring();
+        ThreeThread();
+    }
+
+    /**
+     * 三个线程依次打印 1a，2b，3c，1d。。。
+     *
+     */
+    public static void ThreeThread() {
+
+        MyThread t1 = new MyThread(1);
+        MyThread t2 = new MyThread(2);
+        MyThread t3 = new MyThread(3);
+
+        t1.start();
+        t2.start();
+        t3.start();
+    }
+
+    private static class MyThread extends Thread {
+        private int index;
+
+        private static Object object = new Object();
+        private static int count = 0;
+
+        private static String str = "abcdefghijklmn";
+        private static char[] chars = str.toCharArray();
+
+        MyThread(int index) {
+            this.index = index;
+        }
+
+        public void run() {
+            synchronized (object) {
+                while (count < chars.length) {
+                    object.notifyAll();// 让多个线程竞争锁，符合条件的会打印，不符合的释放锁再去竞争
+                    if (count % 3 == index - 1) {
+                        System.out.println("Thread " + index + "  :" + index + chars[count]);
+                        count += 1;
+                    }
+                    try {
+                        object.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                System.exit(0);
+            }
+        }
     }
 
 

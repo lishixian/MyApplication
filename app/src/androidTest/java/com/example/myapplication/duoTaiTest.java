@@ -1,6 +1,9 @@
 package com.example.myapplication;
 
 import android.content.Intent;
+import android.view.View;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 测试多态
@@ -91,7 +94,8 @@ public class duoTaiTest {
 
 
     public static void test2(){
-
+        ConcurrentHashMap m;
+        View v;
     }
 
     public static void test1(){
