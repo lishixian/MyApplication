@@ -1,14 +1,138 @@
 package leetcode;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Test {
+
     public static void main(String[] args) {
         //twoSum();
         //lengthOfLongestSubstring();
-        ThreeThread();
+        //ThreeThread();
+        //addTwoNumbers();
+        //longestPalindrome();
+        //convert("sdfsdfasdf",2);
+    }
+
+
+    /**
+     * N字形展示字符串
+     *
+     * @param s
+     * @param numRows
+     * @return
+     */
+    public static String convert(String s, int numRows) {
+        if(numRows==1) return s;
+        List<StringBuilder> rows= new ArrayList<>();
+        for(int i =0;i<numRows;i++){
+            rows.add(new StringBuilder());
+        }
+        int len = s.length();
+        int start = 0,num=0,add = 1;
+        while(start<len){
+            rows.get(num).append(s.charAt(start++));
+            if(num==numRows-1){
+                add=-1;
+            }else if(num==0){
+                add = 1;
+            }
+            num +=add;
+        }
+        StringBuilder ret = new StringBuilder();
+        for(StringBuilder row : rows){
+            ret.append(row);
+        }
+        return ret.toString();
+    }
+
+    /** 找到最长的对称字符串
+     * Given a string s, find the longest palindromic substring in s. You may assume that the maximum length of s is 1000.
+     *
+     * Example 1:
+     *
+     * Input: "babad"
+     * Output: "bab"
+     * Note: "aba" is also a valid answer.
+     * Example 2:
+     *
+     * Input: "cbbd"
+     * Output: "bb"
+     */
+    public static void longestPalindrome() {
+        String str = "afsdfasdfdsamasdfadsfadfa";
+        System.out.println("" + longestPalindrome(str));
+    }
+
+    public static String longestPalindrome(String s) {
+        if(s==null||s.length()<1) return "";
+        int len = s.length(),start=0,end=0;
+        String str = "";
+        for(int i = 0;i<len;i++){
+            int len1 = findMaxLen(s,i,i);
+            int len2 = findMaxLen(s,i,i+1);
+            int maxLen = Math.max(len1,len2);
+            if(maxLen > end-start){
+                start = i-(maxLen-1)/2;//这里无论奇数偶数都适用
+                end = i+maxLen/2;
+            }
+        }
+        return  s.substring(start,end+1);
+    }
+
+    public static int findMaxLen(String s,int left,int right){
+        while(left >=0&&right<s.length()&&s.charAt(left) == s.charAt(right)){
+            left--;
+            right++;
+        }
+        return right-left-1;// 这里由于都向外扩展了，所以要-1
+    }
+
+    /**
+     * Example:
+     *
+     * Input: (2 -> 4 -> 3) + (5 -> 6 -> 4)
+     * Output: 7 -> 0 -> 8
+     * Explanation: 342 + 465 = 807.
+     */
+    public static void addTwoNumbers() {
+
+    }
+    public static ListNode addTwoNumbers(ListNode l1, ListNode l2) {
+        ListNode dum = new ListNode(0);
+        ListNode p = l1,q=l2,result = dum;
+        int sum = 0,remainder=0,carry = 0;
+        while(p != null && q != null){
+            int x =  p.val;
+            int y =  q.val;
+            sum = x+y+carry;
+            carry = sum / 10;
+            result.next = new ListNode(sum % 10);
+            result = result.next;
+            p = p.next;
+            q = q.next;
+        }
+        while(p!=null){
+            sum = p.val + carry;
+            result.next = new ListNode(sum % 10);
+            carry = sum/10;
+            result = result.next;
+            p = p.next;
+        }
+        while(q!=null){
+            sum = q.val + carry;
+            result.next = new ListNode(sum % 10);
+            carry = sum/10;
+            result = result.next;
+            q = q.next;
+        }
+        if(carry > 0){
+            result.next = new ListNode(carry);
+        }
+        return dum.next;
     }
 
     /**
