@@ -1,0 +1,18 @@
+<html>
+<body>
+<img src="img/lang.jpg" />
+<img src="img/chat-1.png" />
+</body>
+<script>
+    function getImage(){
+        var img = document.getElementsByTagName("img");
+        for(var i = 0; i < img.length; i++) {
+            var a = document.getElementsByTagName("img")[i];
+            a.onclick = function() {
+                alert(a.src);
+            };
+        }
+     }
+     getImage();
+    </script>
+</html>

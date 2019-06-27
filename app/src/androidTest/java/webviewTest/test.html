@@ -1,0 +1,37 @@
+<head>
+
+</head>
+
+<body>
+<h1 onClick='callAndroid()'>这是JS调用原生1</h1>
+<h1 onClick='callAndroid2()'>这是JS调用原生2</h1>
+<h1 onClick='callAndroid3()'>这是JS调用原生3</h1>
+
+<Script>
+        //Android原生调用JS方法
+        function callJS(){
+            alert("Android调用了JS的callJS方法");
+            return "Android调用了JS的callJS()"
+        }
+
+        //JS调用Android原生方法
+        function callAndroid(){
+            // 由于对象映射，所以调用android对象等于调用Android映射的对象
+            androidToJS.callAndroid("---js调用了---");
+        }
+
+        //JS调用通过shouldOverrideUrlLoading()调用Android原生方法
+        function callAndroid2(){
+            //document.location代表当前页面的url
+            document.location = "js://webview?arg1=111&arg2=222"
+        }
+
+        //JS调用通过prompt()调用Android原生方法
+        function callAndroid3(){
+            var result = prompt("js://webview?arg1=111");
+
+            alert(result);
+        }
+
+    </Script>
+</body>

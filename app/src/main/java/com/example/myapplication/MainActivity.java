@@ -4,27 +4,58 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.webkit.WebView;
 import android.widget.TextView;
 //import android.support.design.widget.NavigationView;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.HashMap;
 import java.util.List;
 
 import base.VActivity;
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.Unbinder;
 import data.CardItem;
 
 public class MainActivity extends VActivity<MainPresenter> {
+
+    private Unbinder unBinder;
+    private WebView webView;
+
+    @BindView(R.id.bt_text_view)
+    TextView view;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        unBinder = ButterKnife.bind(this);
+
+        EventBus.getDefault().register(this);
+
+
+        startActivity(new Intent(""));
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         intentClick();
+        NdkJniUtils jni = new NdkJniUtils();
+        jni.getCLanguageString();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
+        if (unBinder != null && unBinder != Unbinder.EMPTY) {
+            unBinder.unbind();
+            unBinder = null;
+        }
     }
 
     public void intentClick(){

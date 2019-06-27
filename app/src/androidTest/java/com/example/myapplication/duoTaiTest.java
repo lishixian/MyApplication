@@ -40,7 +40,6 @@ public class duoTaiTest {
             System.out.println("creat p");
         }
 
-
         String value = "p";
         protected String getValue(){
             return value;
@@ -77,7 +76,7 @@ public class duoTaiTest {
             System.out.println("c2  -  no static");
         }
 
-        Child2(){
+        private Child2(){
             System.out.println("creat c2");
         }
 
@@ -89,6 +88,7 @@ public class duoTaiTest {
 
 
     public static void main(String[] args) {
+        System.out.println("---main---");
         test1();
     }
 
