@@ -12,8 +12,10 @@
    LRUCache达到最大缓存数量时，会删除头结点，即最少使用的元素；
 
 ### 1. 访问权限有哪些，区别；
- java的访问权限有四种，区别如下：
-|   |类内部|包内部|子类|外部包|
+
+java的访问权限有四种，区别如下：
+
+| |类内部|包内部|子类|外部包|
 |:--|:-:|:-:|:-:|:-:|
 |public|Y|Y|Y|Y|
 |protected|Y|Y|Y|N|
@@ -199,13 +201,13 @@ public class BusinessAgent implements Sell {
 }
 
 ```
-    从以上代码中我们可以了解到，通过静态代理实现我们的需求需要我们在每个方法中都添加相应的逻辑，这里只存在两个方法所以工作量还不算大，
+ 从以上代码中我们可以了解到，通过静态代理实现我们的需求需要我们在每个方法中都添加相应的逻辑，这里只存在两个方法所以工作量还不算大，
 假如Sell接口中包含上百个方法呢?这时候使用静态代理就会编写许多冗余代码。通过使用动态代理，我们可以做一个“统一指示”，
 从而对所有代理类的方法进行统一处理，而不用逐一修改每个方法。
 
-    在java的动态代理机制中，有两个重要的类或接口，一个是 InvocationHandler(Interface)、另一个则是 Proxy(Class)，
+ 在java的动态代理机制中，有两个重要的类或接口，一个是 InvocationHandler(Interface)、另一个则是 Proxy(Class)，
 这一个类和接口是实现我们动态代理所必须用到的。
-    每一个动态代理类都必须要实现InvocationHandler这个接口，并且每个代理类的实例都关联到了一个handler，当我们通过
+ 每一个动态代理类都必须要实现InvocationHandler这个接口，并且每个代理类的实例都关联到了一个handler，当我们通过
 代理对象调用一个方法的时候，这个方法的调用就会被转发为由InvocationHandler这个接口的 invoke 方法来进行调用。
     我们来看看InvocationHandler这个接口的唯一一个方法 invoke 方法：
 ```
@@ -311,7 +313,7 @@ int newCapacity = oldCapacity + (oldCapacity >> 1);
 elementData = Arrays.copyOf(elementData, newCapacity);
 ```
 
-8. LRUCache 是如何实现的（源码角度）？为什么要用 LinkedHashmap？
+### 8. LRUCache 是如何实现的（源码角度）？为什么要用 LinkedHashmap？
    LRUCache内部采用LinkedHashmap结构，当get的时候，LinkedHashmap会把get的元素放在队尾；
    LRUCache达到最大缓存数量时，会删除头结点，即最少使用的元素；
 
