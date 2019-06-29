@@ -63,7 +63,7 @@ java堆|线程共享 |可以处于物理上不连续的内存空间
 java中可作为GC Root的对象有（关于引用见问题4）
 - 1.虚拟机栈中引用的对象（本地变量表）
 - 2.方法区中静态属性引用的对象
-- 3. 方法区中常量引用的对象
+- 3.方法区中常量引用的对象
 - 4.本地方法栈中引用的对象（Native对象）
 
 #### 3.3 常用垃圾收集器
@@ -91,7 +91,7 @@ java中可作为GC Root的对象有（关于引用见问题4）
 象复制到另一块Survivor空间中，然后清理掉Eden和刚才使用过的Survivor空间。
 而由于老年代的特点是每次回收都只回收少量对象，一般使用的是Mark-Compact算法。
 
-4. java的四个引用方式与区别；
+### 4. java的四个引用方式与区别；
 
 - 强引用：只要存在，垃圾收集器就不会回收对象。
 ```
@@ -113,9 +113,204 @@ WeakReference<String>s = new WeakReference<String>(“我只能活到下一次�
 PhantomReference<String>ref = new PhantomReference<String>(“我只能接受死亡通知”) , targetReferenceQueue<String>);
 ```
 
-5. java动态代理机制；
-6. AIDL内部有哪些方法；
-7. ArrayList 和 LinkedList 区别
+### 5. java代理，静态代理和动态代理；
+   我们大家都知道微商代理，简单地说就是代替厂家卖商品，厂家“委托”代理为其销售商品。关于微商代理，首先我们从他们那里
+买东西时通常不知道背后的厂家究竟是谁，也就是说，“委托者”对我们来说是不可见的;其次，微商代理主要以朋友圈的人为目
+标客户，这就相当于为厂家做了一次对客户群体的“过滤”。
+   我们把微商代理和厂家进一步抽象，前者可抽象为代理类，后者可抽象为委托类(被代理类)。通过使用代理，通常有两个优点，
+并且能够分别与我们提到的微商代理的两个特点对应起来：
+优点一：可以隐藏委托类的实现;
+优点二：可以实现客户与委托类间的解耦，在不修改委托类代码的情况下能够做一些额外的处理。
+
+
+#### 5.1静态代理
+若代理类在程序运行前就已经存在，那么这种代理方式被成为 静态代理 ，这种情况下的代理类通常都是我们在Java代码中定义的。
+通常情况下， 静态代理中的代理类和委托类会实现同一接口或是派生自相同的父类。 下面我们用Vendor类代表生产厂家，
+BusinessAgent类代表微商代理，来介绍下静态代理的简单实现，委托类和代理类都实现了Sell接口，
+```
+/**
+ * 委托类和代理类都实现了Sell接口
+ */
+public interface Sell {
+    void sell();
+    void ad();
+}
+/**
+ * 生产厂家
+ */
+public class Vendor implements Sell {
+    public void sell() {
+        System.out.println("In sell method");
+    }
+
+    public void ad() {
+        System,out.println("ad method");
+    }
+}
+
+/**
+ * 代理类
+ */
+public class BusinessAgent implements Sell {
+    private Sell vendor;
+
+    public BusinessAgent(Sell vendor){
+        this.vendor = vendor;
+    }
+
+    public void sell() {
+        vendor.sell();
+    }
+
+    public void ad() {
+        vendor.ad();
+    }
+}
+
+```
+静态代理可以通过聚合来实现，让代理类持有一个委托类的引用即可。
+
+#### 5.2 动态代理
+
+   代理类在程序运行时创建的代理方式被成为 动态代理。 也就是说，这种情况下，代理类并不是在Java代码中定义的，
+而是在运行时根据我们在Java代码中的“指示”动态生成的。
+  相比于静态代理，动态代理的优势在于可以很方便的对代理类的函数进行统一的处理，而不用修改每个代理类的函数。这么说比较抽象，
+下面我们结合一个实例来介绍一下动态代理的这个优势是怎么体现的。现在，假设我们要实现这样一个需求：
+在执行委托类中的方法之前输出“before”，在执行完毕后输出“after”。我们还是以上面例子中的Vendor类作为委托类，BusinessAgent类作为代理类来进行介绍。首先我们来使用静态代理来实现这一需求，相关代码如下：
+```
+public class BusinessAgent implements Sell {
+    private Vendor mVendor;
+
+    public BusinessAgent(Vendor vendor) {
+        this.mVendor = vendor;
+    }
+
+    public void sell() {
+        System.out.println("before");
+        mVendor.sell();
+        System.out.println("after");
+    }
+
+    public void ad() {
+        System.out.println("before");
+        mVendor.ad();
+        System.out.println("after");
+    }
+}
+
+```
+    从以上代码中我们可以了解到，通过静态代理实现我们的需求需要我们在每个方法中都添加相应的逻辑，这里只存在两个方法所以工作量还不算大，
+假如Sell接口中包含上百个方法呢?这时候使用静态代理就会编写许多冗余代码。通过使用动态代理，我们可以做一个“统一指示”，
+从而对所有代理类的方法进行统一处理，而不用逐一修改每个方法。
+
+    在java的动态代理机制中，有两个重要的类或接口，一个是 InvocationHandler(Interface)、另一个则是 Proxy(Class)，
+这一个类和接口是实现我们动态代理所必须用到的。
+    每一个动态代理类都必须要实现InvocationHandler这个接口，并且每个代理类的实例都关联到了一个handler，当我们通过
+代理对象调用一个方法的时候，这个方法的调用就会被转发为由InvocationHandler这个接口的 invoke 方法来进行调用。
+    我们来看看InvocationHandler这个接口的唯一一个方法 invoke 方法：
+```
+public interface InvocationHandler {
+    Object invoke(Object proxy, Method method, Object[] args);
+}
+proxy:　　指代我们所代理的那个真实对象
+method:　　指代的是我们所要调用真实对象的某个方法的Method对象
+args:　　指代的是调用真实对象某个方法时接受的参数
+```
+
+Proxy.newProxyInstance :
+```
+public static Object newProxyInstance(ClassLoader loader, Class<?>[] interfaces, InvocationHandler h) throws IllegalArgumentException
+
+loader:　　一个ClassLoader对象，定义了由哪个ClassLoader对象来对生成的代理对象进行加载
+
+interfaces:　　一个Interface对象的数组，表示的是我将要给我需要代理的对象提供一组什么接口，如果我提供了一组接
+口给它，那么这个代理对象就宣称实现了该接口(多态)，这样我就能调用这组接口中的方法了
+
+h:　　一个InvocationHandler对象，表示的是当我这个动态代理对象在调用方法的时候，会关联到哪一个InvocationHandler对象上
+```
+
+```
+/**
+ * Sell接口
+ */
+public interface Sell {
+    void sell();
+    void ad();
+}
+
+/**
+ * 生产厂家
+ */
+public class Vendor implements Sell {
+    public void sell() {
+        System.out.println("In sell method");
+    }
+
+    public void ad() {
+        System,out.println("ad method");
+    }
+}
+
+//中介类必须实现InvocationHandler接口
+public class DynamicProxy implements InvocationHandler {
+    //obj为委托类对象;
+    private Object obj;
+
+    public DynamicProxy(Object obj) {
+        this.obj = obj;
+    }
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        System.out.println("before");
+        Object result = method.invoke(obj, args);
+        System.out.println("after");
+        return result;
+    }
+}
+
+
+//动态生成代理类的相关代码如下：
+public class Main {
+    public static void main(String[] args) {
+        //创建中介类实例
+        DynamicProxy inter = new DynamicProxy(new Vendor());
+        //加上这句将会产生一个$Proxy0.class文件，这个文件即为动态生成的代理类文件
+        System.getProperties().put("sun.misc.ProxyGenerator.saveGeneratedFiles","true");
+
+        //获取代理类实例sell(代理类是在此处动态生成的)
+        Sell sell = (Sell)(Proxy.newProxyInstance(Sell.class.getClassLoader(), new Class[] {Sell.class}, inter));
+
+        //通过代理类对象调用代理类方法，实际上会转到invoke方法调用
+        sell.sell();
+        sell.ad();
+    }
+}
+
+```
+中介类与委托类构成了静态代理关系，在这个关系中，中介类是代理类，委托类就是委托类;
+代理类与中介类也构成一个静态代理关系，在这个关系中，中介类是委托类，代理类是代理类。
+动态代理关系由两组静态代理关系组成，这就是动态代理的原理。
+
+上面我们已经简单提到过动态代理的原理，这里再简单的总结下：
+首先通过newProxyInstance方法获取代理类实例，而后我们便可以通过这个代理类实例调用代理类的方法，对代理类的方法的调用
+实际上都会调用中介类(调用处理器)的invoke方法，在invoke方法中我们调用委托类的相应方法，并且可以添加自己的处理逻辑。
+
+
+### 6. AIDL内部有哪些方法；
+
+### 7. ArrayList 和 LinkedList 区别
+1.ArrayList是实现了基于动态数组的数据结构，LinkedList基于链表的数据结构。
+2.对于随机访问get和set，ArrayList觉得优于LinkedList，因为LinkedList要移动指针。
+3.对于新增和删除操作add和remove，LinedList比较占优势，因为ArrayList要移动数据。
+```
+ArrayList的同步：
+同步方法：List list = Collections.synchronizedList(new ArrayList(...));或者使用Vector或CopyOnWriteArrayList
+ArrayList的扩容：
+int newCapacity = oldCapacity + (oldCapacity >> 1);
+elementData = Arrays.copyOf(elementData, newCapacity);
+```
+
 8. LRUCache 是如何实现的（源码角度）？为什么要用 LinkedHashmap？
    LRUCache内部采用LinkedHashmap结构，当get的时候，LinkedHashmap会把get的元素放在队尾；
    LRUCache达到最大缓存数量时，会删除头结点，即最少使用的元素；
