@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 public class Test {
 
@@ -15,7 +16,89 @@ public class Test {
         //addTwoNumbers();
         //longestPalindrome();
         //convert("sdfsdfasdf",2);
+        //testNode();
+        //testF(6);
     }
+
+
+    /**
+     * 斐波那契数列 1, 1, 2, 3, 5
+     * @param n
+     * @return
+     */
+    public static int testF(int n){
+        if (n<=2){
+            return 1;
+        }
+        return testF(n-1) + testF(n-2);
+    }
+
+    public static void testNode(){
+        ListNode node = new ListNode(0);
+        ListNode node1 = new ListNode(1);
+        ListNode node2 = new ListNode(2);
+        ListNode node3 = new ListNode(3);
+        node.next = node1;
+        node1.next = node2;
+        node2.next = node3;
+        printNode(node);
+        printNode(reverse3(node));
+    }
+
+
+    public static ListNode reverse3(ListNode node) {
+        if (node == null || node.next == null) return node;
+        ListNode temp = node.next;
+        ListNode newHead = reverse(node.next);
+        temp.next = node;
+        node.next = null;
+        return newHead;
+    }
+
+    public static ListNode reverse2(ListNode node) {
+        if (node == null) return null;
+        ListNode pre = null;
+        ListNode next = null;
+        while (node != null) {
+            next = node.next;
+            node.next = pre;
+            pre = node;
+            node = next;
+        }
+        return pre;
+    }
+
+    public static ListNode reverse(ListNode node){
+        Stack stack = new Stack();
+        ListNode prenode = node;
+        while(node != null){
+            stack.push(node.val);
+            node = node.next;
+        }
+        ListNode n = new ListNode();
+        ListNode result = n;
+        while(!stack.isEmpty()){
+            n.val = (int)stack.pop();
+            ListNode newNode = new ListNode();
+            n.next = newNode;
+            n = newNode;
+        }
+        return result;
+    }
+
+    public static void printNode(ListNode node){
+        if(node == null){
+            return;
+        }
+        System.out.print("node{");
+        while(node != null){
+            System.out.print(node.val + ",");
+            node = node.next;
+        }
+        System.out.print("}");
+    }
+
+
 
 
     /**

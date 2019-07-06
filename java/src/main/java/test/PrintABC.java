@@ -1,4 +1,4 @@
-package leetcode;
+package test;
 
 import java.util.ArrayList;
 import java.util.concurrent.locks.Condition;

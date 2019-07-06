@@ -65,6 +65,7 @@ public class MessengerActivity extends Activity {
         bindService(intent,mConnection, Context.BIND_AUTO_CREATE);
     }
 
+
     protected void onDestroy(){
         unbindService(mConnection);
         super.onDestroy();

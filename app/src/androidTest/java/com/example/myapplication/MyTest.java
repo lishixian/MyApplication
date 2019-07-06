@@ -1,5 +1,7 @@
 package com.example.myapplication;
 
+import android.content.SharedPreferences;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -45,7 +47,7 @@ public class MyTest {
         ///test();
         //test2();
         //test3();
-        testInteger();
+        //testInteger();
     }
 
     public static void testInteger(){
