@@ -56,10 +56,11 @@ public class ThreadLocalTest {
 
     // 测试代码
     public static void main(String[] args) {
-        MyRunnable runnable = new MyRunnable();
+/*        MyRunnable runnable = new MyRunnable();
         new Thread(runnable, "线程1").start();
         new Thread(runnable, "线程2").start();
-        new Thread(runnable, "线程3").start();
+
+        new Thread(runnable, "线程3").start();*/
     }
 
     // 线程类

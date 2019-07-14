@@ -98,5 +98,10 @@ public final Disposable subscribe(Consumer<? super T> onNext, Consumer<? super T
 
 }
 
+总结一下：
 
+- 创建任务链，每一步都会返回对应的Observable对象。
+- 逆向逐级订阅。每一步都会生成对应的Observer对上一步生成的Observable进行订阅
+- 执行任务链。执行任务链之后，每一步都会通知对应的Observer，从而完成整调任务链。
 
+https://www.jianshu.com/p/e5be2fa8701c

@@ -13,10 +13,13 @@ android基础问题有如下内容：
 11.1. view事件分发机制；上下滑动冲突问题如何处理；
 11.2. mvp和mvvm的区别；
 
-android有序广播和无序广播的区别;
-Service的bindService和startService混合使用及其关闭分析;
-sharepreference是线程安全的吗,是进程安全你的吗?
+ android有序广播和无序广播的区别;
 
+ Service的bindService和startService混合使用及其关闭分析;
+
+ sharepreference  contentProvider是线程安全的吗,是进程安全你的吗?
+
+ activity生命周期 A启动B，B返回A, A,B的全生命周期
 
 # 1. handler机制；handler如何找到looper；延迟消息怎么处理；messagequeue的数据结构是什么；
 
@@ -717,8 +720,10 @@ Service的onDestory方法不会立刻执行,因为有一个与Service绑定的Ac
 调用服务功能结束后，unbindService(connection)解除绑定服务，置空中介对象；
 最后不再需要服务时，stopService(intent)终止服务。
 
-# sharePreference 是线程安全的吗?是进程安全的吗?
-因为获取的时候加了锁,所以是线程安全的:
+#  sharepreference  contentProvider是线程安全的吗,是进程安全你的吗?
+
+sharepreference是线程安全的, 进程不安全;
+sharepreference因为获取和赋值的时候加了锁,所以是线程安全的.
 ```
 ContextImpl#getSharedPreferences():
 public SharedPreferences getSharedPreferences(String name, int mode) {
@@ -746,15 +751,68 @@ public SharedPreferences getSharedPreferences(String name, int mode) {
         return getSharedPreferences(file, mode);
     }
 
+// 在赋值的时候也加了锁
+android.app.SharedPreferencesImpl.EditorImpl#putString
+        @Override
+        public Editor putString(String key, @Nullable String value) {
+            synchronized (mEditorLock) {
+                mModified.put(key, value);
+                return this;
+            }
+        }
+```
+当多个进程同时而又高频的调用commit方法时，就会导致文件被反复覆盖写入，而并没有被及时读取，所以造成进程间数据的不同步
+
+ps:sharepreference的apply 和 commit:
+apply没有返回值而commit返回boolean表明修改是否提交成功
+apply是将修改数据原子提交到内存，而后异步真正提交到硬件磁盘；而commit是同步的提交到硬件磁盘，因此，在多个并发的提交commit的时候，他们会等待正在处理的commit保存到磁盘后在操作，从而降低了效率。而apply只是原子的提交到内存，后面有调用apply的函数的将会直接覆盖前面的内存数据，这样从一定程度上提高了很多效率。
+apply方法不会提示任何失败的提示
+
+
+
+Provider线程不安全, 进程安全;
+Provider是单例对象，但可能会在多个线程中执行数据操作的方法。
+那么，如果Provider中使用的是同一个SQLiteOpenHelper实例，是可以保证数据库创建/升级/降级线程安全的。
+```
+android.database.sqlite.SQLiteOpenHelper.getWritableDatabase
+    public SQLiteDatabase getWritableDatabase() {
+        synchronized (this) {
+            return getDatabaseLocked(true);
+        }
+    }
+
 ```
 
-sharePreference的更多信息:https://www.cnblogs.com/wenjianes/p/10114394.html
+面试题：多个进程同时调用一个ContentProvider的query获取数据，ContentPrvoider是如何反应的呢？
+标准答案：一个content provider可以接受来自另外一个进程的数据请求。尽管ContentResolver与ContentProvider类隐藏了实现细节，但是ContentProvider所提供的query()，insert()，delete()，update()都是在ContentProvider进程的线程池中被调用执行的，而不是进程的主线程中。这个线程池是有Binder创建和维护的，其实使用的就是每个应用进程中的Binder线程池。
 
 
 更多信息参看:https://www.cnblogs.com/zdz8207/p/android-learning-2018.html
 
 
+# activity生命周期 A启动B，B返回A, A,B的全生命周期
+1.启动A
+      Activity的初始化了，A第一步创建onCreate(20569): -------->成功！
+     Activity被激活A，onStart   Activity显示在屏幕上(20569): -------->成功！
+     Activity被恢复A，onResume(20569): -------->成功！
+2.在A中启动B
+   Activity被暂停A，Activity进入暂停状态onPause(21407): -------->成功！
+   B------------------>(21407): 创建！
+   Activity被激活B，onStart   Activity显示在屏幕上(21407): -------->成功！
+   Activity被恢复B，onResume(21407): -------->成功！
+   Activity被停止A，Activity进入停止状态onStop(21407): -------->成功！
 
+3.从B中返回A（按物理硬件返回键）
+     Activity被暂停B，Activity进入暂停状态onPause(21407): -------->成功！
+     Activity被重启A，Activity从停止状态进入活动状态onRestart(21407): -------->成功！
+     Activity被激活A，onStart   Activity显示在屏幕上(21407): -------->成功！
+     Activity被恢复A，onResume(21407): -------->成功！
+     Activity被停止B，Activity进入停止状态onStop(21407): -------->成功！
+     Activity的消亡了，B最后的生命！销毁onDestroy(21407): -------->成功！
+4.继续返回
+     Activity被暂停A，Activity进入暂停状态onPause(21407): -------->成功！
+     Activity被停止A，Activity进入停止状态onStop(21407): -------->成功！
+     Activity的消亡了，A最后的生命！销毁onDestroy(21407): -------->成功！
 
 
 

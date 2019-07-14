@@ -1,6 +1,5 @@
 package com.example.myapplication;
 
-import android.content.Intent;
 import android.view.View;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,6 +23,10 @@ public class duoTaiTest {
         public void getf() {
 
         }
+/* 返回类型不同不算重载
+        private int getf() {
+            return 1;
+        }*/
     }
 
     static class  Parent{
@@ -61,9 +64,16 @@ public class duoTaiTest {
         }
 
         String value = "c";
+        // 重写只能扩大范围(public),不能缩小
         protected String getValue(){
             return value;
         }
+
+        public String getValue(int i,int j){
+            int k = i+j;
+            return value;
+        }
+
     }
 
     static class Child2 extends Parent{
@@ -88,8 +98,8 @@ public class duoTaiTest {
 
 
     public static void main(String[] args) {
-        System.out.println("---main---");
-        test1();
+        //System.out.println("---main---");
+        //test1();
     }
 
 

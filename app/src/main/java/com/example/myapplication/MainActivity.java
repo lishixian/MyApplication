@@ -37,6 +37,7 @@ public class MainActivity extends VActivity<MainPresenter> {
         EventBus.getDefault().register(this);
 
         startActivity(new Intent(""));
+        Handler h;
     }
 
     @Override

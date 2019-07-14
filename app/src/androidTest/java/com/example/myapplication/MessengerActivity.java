@@ -8,6 +8,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
@@ -63,8 +64,16 @@ public class MessengerActivity extends Activity {
         super.onCreate(save);
         Intent intent = new Intent(this,MessengerService.class);
         bindService(intent,mConnection, Context.BIND_AUTO_CREATE);
+        Handler h = new Handler();
     }
 
+    private static class MyThread extends Thread {
+        public void run(){
+            Looper.prepare();
+            Handler h = new Handler();
+            Looper.loop();
+        }
+    }
 
     protected void onDestroy(){
         unbindService(mConnection);

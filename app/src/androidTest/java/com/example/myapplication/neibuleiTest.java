@@ -26,7 +26,7 @@ public class neibuleiTest {
 
 
     public static void main(String[] args) {
-        test();
+        //test();
     }
 
     /**

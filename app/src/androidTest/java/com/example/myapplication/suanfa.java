@@ -10,14 +10,14 @@ import java.util.Stack;
  */
 public class suanfa {
     public static void main(String args[]) {
-        int[] a = {3, 5, 9, 3, 6, 4, 8, 5, 1, 4, 9, 3, 5, 7, 2, 8, 45, 4, 93, 54, 678, 5};
+        //int[] a = {3, 5, 9, 3, 6, 4, 8, 5, 1, 4, 9, 3, 5, 7, 2, 8, 45, 4, 93, 54, 678, 5};
         //System.out.println("---");
         //testQ();
         //testM();
         //testX();
         //testC(a);
-        sort(a);
-        System.out.println(Arrays.toString(a));
+        //sort(a);
+        //System.out.println(Arrays.toString(a));
         //testBianli();
         //testStack();
         //testQueue();

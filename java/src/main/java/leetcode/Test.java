@@ -21,6 +21,8 @@ public class Test {
     }
 
 
+
+
     /**
      * 斐波那契数列 1, 1, 2, 3, 5
      * @param n
@@ -112,7 +114,7 @@ public class Test {
         if(numRows==1) return s;
         List<StringBuilder> rows= new ArrayList<>();
         for(int i =0;i<numRows;i++){
-            rows.add(new StringBuilder());
+            rows.add(new StringBuilder());// 有rows列
         }
         int len = s.length();
         int start = 0,num=0,add = 1;
@@ -227,7 +229,6 @@ public class Test {
         MyThread t1 = new MyThread(1);
         MyThread t2 = new MyThread(2);
         MyThread t3 = new MyThread(3);
-
         t1.start();
         t2.start();
         t3.start();

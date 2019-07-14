@@ -14,6 +14,7 @@ import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import network.ErrorHandledConsumer;
 import network.RetrofitHelper;
@@ -43,6 +44,7 @@ public class MainPresenter extends BPresent<MainActivity> {
     }
 
     public void test(){
+        // create()构建了一个包含ObservableOnSubscribe的ObservableCreate对象，该对象继承Observable。
         Observable.create(new ObservableOnSubscribe<String>() {
             @Override
             public void subscribe(ObservableEmitter<String> emitter) throws Exception {
@@ -52,8 +54,10 @@ public class MainPresenter extends BPresent<MainActivity> {
                 emitter.onComplete();
             }
         })
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())//构建了一个ObservableSubscribeOn对象。
+                //subscribeActual创建一个SubscribeOnObserver对象,
+                .observeOn(AndroidSchedulers.mainThread())//构建了一个ObservableObserveOn对象。
+                //subscribeActual生成ObserveOnObserver,用ObserveOnObserver订阅ObservableSubscribeOn对象
                 .subscribe(new Observer<String>() {
             @Override
             public void onSubscribe(Disposable d) {
