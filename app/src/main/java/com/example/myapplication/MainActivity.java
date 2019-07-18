@@ -12,6 +12,7 @@ import org.greenrobot.eventbus.EventBus;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import base.VActivity;
 import butterknife.BindView;
@@ -23,6 +24,7 @@ public class MainActivity extends VActivity<MainPresenter> {
 
     private Unbinder unBinder;
     private WebView webView;
+    private CopyOnWriteArrayList list;
 
     @BindView(R.id.bt_text_view)
     TextView view;

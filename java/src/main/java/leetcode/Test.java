@@ -21,6 +21,61 @@ public class Test {
     }
 
 
+    /**
+     * 二叉树的后序遍历 - 非递归版java实现
+     * @param root
+     * @return
+     */
+    public ArrayList<Integer> postorderTraversal(TreeNode root) {
+        Stack<TreeNode> stack = new Stack<TreeNode>();
+        TreeNode cur = root;
+        TreeNode prior = null;
+        ArrayList<Integer> ans = new ArrayList<Integer>(20);
+        while (cur != null || !stack.isEmpty()) {
+            if (cur != null) {
+                stack.push(cur);
+                cur = cur.left;
+            } else {
+                cur = stack.pop();
+                if (cur.right == null || cur.right == prior) {
+                    ans.add(cur.val);
+                    prior = cur;
+                    cur = null;
+                }
+                else {
+                    stack.push(cur);
+                    cur = cur.right;
+                    stack.push(cur);
+                    cur = cur.left;
+                }
+            }
+        }
+        return ans;
+    }
+
+    /**
+     * 二叉树的中序遍历 - 非递归版java实现
+     * @param root
+     * @return
+     */
+    public ArrayList<Integer> postorderTraversal2(TreeNode root) {
+        Stack<TreeNode> stack = new Stack<TreeNode>();
+        TreeNode cur = root;
+        ArrayList<Integer> ans = new ArrayList<Integer>(20);
+        while (cur != null || !stack.isEmpty()) {
+            if (cur != null) {
+                stack.push(cur);//前序
+                cur = cur.left;
+            } else {
+                cur = stack.pop();
+                ans.add(cur.val);// 中序
+                cur = cur.right;
+            }
+        }
+        return ans;
+    }
+
+
 
 
     /**
