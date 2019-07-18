@@ -48,6 +48,48 @@ public class MyTest {
         //test2();
         //test3();
         //testInteger();
+        //System.out.println("----:" + testTry(3));
+    }
+
+
+    /** finally在有无异常下都会走完, 其return的值会被作为最后return的值.
+     *
+     * try
+     * return i =1
+     * finally
+     * return i =2
+     * ----:2       finally的return 会作为最后的return值
+     * @return
+     */
+    public static int testTry(int a){
+        try {
+            System.out.println("try");
+            if(a==3){
+                throw new Exception("dddd");
+            }
+            return testTry2(1);
+        }catch (Exception e){
+            System.out.println("catch");
+            e.printStackTrace();
+        }finally {
+            System.out.println("finally");
+            return testTry2(2);
+        }
+    }
+/*    try
+            catch
+    java.lang.Exception: dddd
+    at com.example.myapplication.MyTest.testTry(MyTest.java:67)
+    at com.example.myapplication.MyTest.main(MyTest.java:51)
+            finally
+            return i =2
+            ----:2*/
+
+
+
+    public static int testTry2(int i){
+        System.out.println("return i =" + i);
+        return i;
     }
 
     public static void testInteger(){

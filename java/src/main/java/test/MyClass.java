@@ -1,5 +1,6 @@
 package test;
 
+import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -14,8 +15,70 @@ public class MyClass {
         //testFutureTask();
         //Integer i = 9;
         //System.out.println(9.hashCode());// int 的hashcode是其本身值
-        testFive();
+        //testFive();
+        //main2();
+    }
 
+    /**
+     * 找出两个没有重复的数
+     *
+     * 由于 A 和 B 是不一样的值，所以 A^B 的结果不为 0，也就是说，这个异或值的二进制中某一位为1。
+     * 显然，A 和 B 中有且仅有一个数的相同位上也为 1。
+     */
+    public static void main2() {
+        int[] arr = {15,1,15,16,1,7,16,3};
+        ArrayList<Integer> arr1 = new ArrayList();
+        ArrayList<Integer> arr2 = new ArrayList();
+        int result = 0;
+        for (int i = 0; i < arr.length; i++) {
+            result = result ^ arr[i];
+        }
+        System.out.println(result);
+
+        int tem = 1;
+        while(result %2 != 1){
+            tem++;
+            result = result/2;
+        }
+        System.out.println(tem);
+        //分两个数组
+        for (int i = 0; i < arr.length; i++) {
+            if (isIntNumberNBitONEInBinary(arr[i],tem)){
+                arr1.add(arr[i]);
+            }else{
+                arr2.add(arr[i]);
+            }
+        }
+        for (int i = 0; i < arr1.size(); i++) {
+            System.out.print(arr1.get(i) + " ");
+        }
+        System.out.println( " -----------  ");
+        for (int i = 0; i < arr2.size(); i++) {
+            System.out.print(arr2.get(i) + " ");
+        }
+        System.out.println( " -----------  ");
+        result = 0;
+        for (int i = 0; i < arr1.size(); i++) {
+            result = result ^ arr1.get(i);
+        }
+        System.out.println(result);
+        result = 0;
+        for (int i = 0; i < arr2.size(); i++) {
+            result = result ^ arr2.get(i);
+        }
+        System.out.println(result);
+//        SpringApplication.run(PrintApplication.class, args);
+    }
+
+    private static boolean isIntNumberNBitONEInBinary(int number, int nbit) {
+        boolean result = false;
+/*        if((number%(Math.pow(2, nbit)))/(Math.pow(2, nbit-1)) >= 1.0){
+            result = true;
+        }*/
+        if ((number / Math.pow(2, nbit - 1) % 2) >= 1) {
+            result = true;
+        }
+        return result;
     }
 
 

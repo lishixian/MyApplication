@@ -1,4 +1,26 @@
 android基础问题有如下内容：
+
+
+
+
+
+#android重要术语
+1. ActivityManagerService,简称AMS,服务端对象,负责系统中所有Activity的生命周期
+2. ActivityThread,App的真正入口,当开启App之后,会调用main(),开启消息循环队列,这就是传说中的
+UI线程或叫主线程.与AMS配合,一起完成Activity的管理工作.
+3. ApplicationThread, 用来实现AMS和ActivityThread之间的交互.
+4. ApplicationThreadProxy, ApplicationThread在服务器端的代理, 负责和客户端的ApplicationThread通讯.
+5. Instrumentation, 每个应用程序只有一个,每个Activity内部都有一个该对象的引用. 可以理解为应用进程管家.
+ActivityThread要创建或暂停某个Acvitity是,都需要通过Instrumentation来进行具体操作.
+6. ActivityStack, Activity在AMS的栈管理,用来记录已经启动的Activity的先后关系,状态信息等.
+通过ActivityStack决定是否需要启动新的进程.
+7. ActivityRecord, ActivityStack的管理对象,每个Activity在AMS对应一个ActivityRecord,来记录Activity
+的状态以及其他管理信息.其实就是服务端的Activity对象的映射.
+8. TaskRecord,AMS抽象的一个"任务"概念.记录里ActivityRecord的栈.一个"task"包含若干个ActivityRecord.
+
+
+
+
 1. handle机制；handler如何找到looper；延迟消息怎么处理；messagequeue的数据结构是什么；
 2. context和Acticity的关系；
 3. Service 的使用（start和bind），IntentService的使用，源码解析；
@@ -816,7 +838,8 @@ android.database.sqlite.SQLiteOpenHelper.getWritableDatabase
 
 
 
-
+# Android 内存管理机制
+https://blog.csdn.net/lovelease/article/details/82348448
 
 
 
