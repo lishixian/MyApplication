@@ -742,7 +742,7 @@ Service的onDestory方法不会立刻执行,因为有一个与Service绑定的Ac
 调用服务功能结束后，unbindService(connection)解除绑定服务，置空中介对象；
 最后不再需要服务时，stopService(intent)终止服务。
 
-#  sharepreference  contentProvider是线程安全的吗,是进程安全你的吗?
+#  sharepreference  contentProvider是线程安全的吗,是进程安全的吗?
 
 sharepreference是线程安全的, 进程不安全;
 sharepreference因为获取和赋值的时候加了锁,所以是线程安全的.
@@ -813,28 +813,33 @@ android.database.sqlite.SQLiteOpenHelper.getWritableDatabase
 
 
 # activity生命周期 A启动B，B返回A, A,B的全生命周期
-1.启动A
-      Activity的初始化了，A第一步创建onCreate(20569): -------->成功！
-     Activity被激活A，onStart   Activity显示在屏幕上(20569): -------->成功！
-     Activity被恢复A，onResume(20569): -------->成功！
-2.在A中启动B
-   Activity被暂停A，Activity进入暂停状态onPause(21407): -------->成功！
-   B------------------>(21407): 创建！
-   Activity被激活B，onStart   Activity显示在屏幕上(21407): -------->成功！
-   Activity被恢复B，onResume(21407): -------->成功！
-   Activity被停止A，Activity进入停止状态onStop(21407): -------->成功！
+```	
+开启LoginActivity
+2020-04-15 12:01:08.718 22436-22436/com.example.myapp D/--lisx--LoginActivity: onCreate: 
+2020-04-15 12:01:09.075 22436-22436/com.example.myapp D/--lisx--LoginActivity: onStart: 
+2020-04-15 12:01:09.090 22436-22436/com.example.myapp D/--lisx--LoginActivity: onResume: 
 
-3.从B中返回A（按物理硬件返回键）
-     Activity被暂停B，Activity进入暂停状态onPause(21407): -------->成功！
-     Activity被重启A，Activity从停止状态进入活动状态onRestart(21407): -------->成功！
-     Activity被激活A，onStart   Activity显示在屏幕上(21407): -------->成功！
-     Activity被恢复A，onResume(21407): -------->成功！
-     Activity被停止B，Activity进入停止状态onStop(21407): -------->成功！
-     Activity的消亡了，B最后的生命！销毁onDestroy(21407): -------->成功！
-4.继续返回
-     Activity被暂停A，Activity进入暂停状态onPause(21407): -------->成功！
-     Activity被停止A，Activity进入停止状态onStop(21407): -------->成功！
-     Activity的消亡了，A最后的生命！销毁onDestroy(21407): -------->成功！
+跳转MainActivity
+2020-04-15 12:01:30.887 22436-22436/com.example.myapp D/--lisx--LoginActivity: onPause: 
+2020-04-15 12:01:30.915 22436-22436/com.example.myapp D/--lisx--MainActivity: onCreate: 
+2020-04-15 12:01:31.068 22436-22436/com.example.myapp D/--lisx--MainActivity: onStart: 
+2020-04-15 12:01:31.072 22436-22436/com.example.myapp D/--lisx--MainActivity: onResume: 
+2020-04-15 12:01:31.345 22436-22436/com.example.myapp D/--lisx--LoginActivity: onStop: 
+
+返回键
+2020-04-15 12:01:40.438 22436-22436/com.example.myapp D/--lisx--MainActivity: onPause: 
+2020-04-15 12:01:40.454 22436-22436/com.example.myapp D/--lisx--LoginActivity: onRestart: 
+2020-04-15 12:01:40.455 22436-22436/com.example.myapp D/--lisx--LoginActivity: onStart: 
+2020-04-15 12:01:40.459 22436-22436/com.example.myapp D/--lisx--LoginActivity: onResume: 
+2020-04-15 12:01:40.550 22436-22436/com.example.myapp D/--lisx--MainActivity: onStop: 
+2020-04-15 12:01:40.553 22436-22436/com.example.myapp D/--lisx--MainActivity: onDestroy: 
+
+
+返回键
+2020-04-15 12:01:44.300 22436-22436/com.example.myapp D/--lisx--LoginActivity: onPause: 
+2020-04-15 12:01:44.464 22436-22436/com.example.myapp D/--lisx--LoginActivity: onStop: 
+2020-04-15 12:01:44.466 22436-22436/com.example.myapp D/--lisx--LoginActivity: onDestroy: 
+```
 
 
 
