@@ -1,0 +1,33 @@
+@startuml
+title 502_灭屏流程
+
+[-> PhoneWindowManager: 按电源键灭屏
+PhoneWindowManager->PhoneWindowManager: interceptKeyBeforeQueueing
+note left: case KeyEvent.KEYCODE_POWER
+PhoneWindowManager->PhoneWindowManager: interceptPowerKeyUp
+PhoneWindowManager->PhoneWindowManager:powerPress
+PhoneWindowManager->PowerManager:goToSleep
+PowerManager->PowerManagerService:goToSleep
+PowerManagerService->PowerManagerService:goToSleepInternal
+PowerManagerService->PowerManagerService:goToSleepNoUpdateLocked
+activate PowerManagerService
+PowerManagerService->PowerManagerService:reallyGoToSleepNoUpdateLocked
+PowerManagerService->PowerManagerService:setWakefulnessLocked
+PowerManagerService->Notifier:onWakefulnessChangeStarted
+Notifier->Notifier:handleEarlyInteractiveChange
+Notifier->Notifier:updatePendingBroadcastLocked
+note left: MSG_BROADCAST
+Notifier->Notifier:sendNextBroadcast
+Notifier->Notifier:sendGoToSleepBroadcast
+note left: ACTION_SCREEN_OFF
+
+Notifier->PhoneWindowManager:startedGoingToSleep
+note left: 进行锁屏流程(Keyguard的绘制)
+deactivate
+
+PowerManagerService->PowerManagerService:updatePowerStateLocked
+
+
+
+
+@enduml

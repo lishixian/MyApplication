@@ -1,0 +1,59 @@
+@startuml
+title wifi初始化
+hide footbox
+
+
+box "frameworks/base/services"
+participant SystemServer
+participant SystemServiceManager
+end box
+
+[-> SystemServer: main
+SystemServer -> SystemServer: run
+activate SystemServer
+SystemServer -> SystemServer: startOtherServices
+activate SystemServer
+SystemServer -> SystemServiceManager: startService
+activate SystemServer
+note right: WIFI_SERVICE_CLASS: \n com.android.server.wifi.WifiService
+activate SystemServiceManager
+
+box "frameworks/opt/net"
+participant WifiService
+participant WifiServiceImpl
+participant WifiController
+end box
+create WifiService
+SystemServiceManager -> WifiService: constructor.newInstance
+create WifiServiceImpl
+WifiService -> WifiServiceImpl: new
+create WifiController
+WifiServiceImpl->WifiController:new
+
+
+SystemServiceManager -> SystemServiceManager: startService
+activate SystemServiceManager
+SystemServiceManager -> WifiService: onStart
+activate WifiService
+WifiService -> WifiService: publishBinderService
+activate WifiService
+deactivate WifiService
+deactivate WifiService
+deactivate SystemServiceManager
+deactivate SystemServiceManager
+deactivate SystemServer
+
+
+SystemServer -> SystemServiceManager: startBootPhase
+activate SystemServer
+SystemServiceManager -> WifiService: onBootPhase
+WifiService->WifiServiceImpl:checkAndStartWifi
+activate WifiServiceImpl
+WifiServiceImpl->WifiController:start
+WifiServiceImpl->WifiServiceImpl:setWifiEnabled
+deactivate WifiServiceImpl
+deactivate SystemServer
+deactivate SystemServer
+deactivate SystemServer
+
+@enduml

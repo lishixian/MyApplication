@@ -1,0 +1,60 @@
+@startuml
+title 拍照识别_多张时序图
+
+hide footbox
+
+
+[-> CameraShotActivity: oncreate
+note left: 拍照
+CameraShotActivity->CaptureActivity:continueLaunch
+note right:android.camera.iflytek
+CaptureActivity -->> CameraShotActivity:onActivityResult
+note over MultiPictureSelectActivity: 编辑界面
+create MultiPictureSelectActivity
+CameraShotActivity -> MultiPictureSelectActivity:create
+MultiPictureSelectActivity -> MultiPictureSelectActivity:onClick
+activate MultiPictureSelectActivity
+MultiPictureSelectActivity -> MultiPictureSelectActivity:onOcr
+note left: 开始识别
+activate MultiPictureSelectActivity
+MultiPictureSelectActivity -> OcrManager:startOcr
+create CustomObserver
+OcrManager -> CustomObserver:create
+deactivate MultiPictureSelectActivity
+deactivate MultiPictureSelectActivity
+OcrManager -> RequstEngine: recognizeJson
+...
+CustomObserver <<--RequstEngine: onSuccess
+CustomObserver -> OCRDatabaseController: insertOcrWords
+CustomObserver -> CustomObserver: handleMessage  case OCR_SUCCESS
+note over ResultShowActivity: 识别返回界面
+create ResultShowActivity
+CustomObserver -> ResultShowActivity: create
+ResultShowActivity -> ResultShowActivity: onCreate
+activate ResultShowActivity
+ResultShowActivity->ResultShowActivity:initDataFromDatabase
+activate ResultShowActivity
+deactivate ResultShowActivity
+create FileCreateDialog
+ResultShowActivity->FileCreateDialog:create
+deactivate ResultShowActivity
+ResultEditController -> ResultEditController: onClick
+note left: case R.id.result_doc_create:\n 生成文档
+ResultEditController -> ResultShowActivity: onDocumentCreate
+ResultShowActivity -> FileCreateDialog: createDocFileIfPossible
+FileCreateDialog -> ResultShowActivity:saveDoc
+note left: 保存文档
+create FileSaveManager
+ResultShowActivity -> FileSaveManager: create
+FileSaveManager -> FileSaveManager: restoreEditData
+FileSaveManager -> ResultShowActivity: mFileSaveListener.onSaveFinish
+create DocumentShowActivity
+ResultShowActivity -> DocumentShowActivity: create
+DocumentShowActivity -> DocumentShowActivity: onUpload
+activate DocumentShowActivity
+DocumentShowActivity -> DocumentShowActivity: startUploadTask
+note left: 上传
+deactivate
+
+
+@enduml

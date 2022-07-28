@@ -1,0 +1,120 @@
+@startuml
+title 301-蓝牙连接后-同步数据流程
+
+participant BTCallback
+participant BleController
+participant WristbandManager
+participant L2Layer
+participant L1Layer
+participant GattLayer
+
+
+GattLayer->L1Layer:onConnectionStateChange
+L1Layer->L2Layer:onConnectionStateChange
+L2Layer->WristbandManager:onConnectionStateChange
+WristbandManager->WristbandManager:handleMessage
+note left:MSG_STATE_CONNECTED
+WristbandManager->BleController:isGattConnected
+BleController->BleController:handleMessage
+note left:MSG_STATE_CONNECTED
+BleController->WristbandManager:StartLoginProcess
+activate WristbandManager
+WristbandManager->WristbandManager:UpdateWristState
+note left:STATE_WRIST_LOGING
+WristbandManager->BleController:onLoginStateChange
+
+WristbandManager->WristbandManager:RequestLogin
+activate WristbandManager
+WristbandManager->L2Layer:BondCmdRequestLogin
+note left:CMD_BOND_REG:KEY_LOGIN_REQ
+L2Layer->L1Layer:sendData
+WristbandManager->WristbandManager:同步锁，等待回复：mRequestResponseLock
+WristbandManager<--L2Layer:onBondCmdRequestLogin
+note left:CMD_BOND_REG:KEY_LOGIN_RSP
+WristbandManager->WristbandManager:解同步锁mRequestResponseLock，继续执行RequestLogin
+
+WristbandManager->WristbandManager:setDataSync
+activate WristbandManager
+WristbandManager->WristbandManager:initialCommandSend
+WristbandManager->L2Layer:sportDataCmdSyncSetting
+note left:CMD_SPORTS_DATA:KEY_SPORTS_DATA_SYNC
+WristbandManager->WristbandManager: return waitCommandSend():同步锁mCommandSendLock,直到该命令发送完毕
+deactivate
+deactivate
+WristbandManager->WristbandManager:setTimeSync:设置手环时间
+activate WristbandManager
+WristbandManager->L2Layer:SettingCmdTimeSetting:CMD_SETTING:KEY_SETTING_TIMER
+deactivate
+WristbandManager->WristbandManager:setPhoneOS：设置要连接的手机类型（ios 或者 安卓）
+activate WristbandManager
+WristbandManager->L2Layer:SettingCmdPhoneOSSetting:CMD_SETTING:KEY_SETTING_PHONE_OS
+deactivate
+WristbandManager->WristbandManager:setPhoneMacAddress：设置手机蓝牙地址
+activate WristbandManager
+WristbandManager->L2Layer:SettingCmdPhoneMacAddressSetting:CMD_SETTING:KEY_SETTING_PHONE_MAC_ADDRESS
+deactivate
+
+WristbandManager->WristbandManager:setClocksSyncRequest：请求手环闹钟设置
+activate WristbandManager
+WristbandManager->L2Layer:SettingCmdRequestAlarmList:CMD_SETTING:KEY_SETTING_GET_ALARM_LIST_REQ
+L2Layer<--L2Layer:onDataReceive:CMD_SETTING  :  KEY_SETTING_GET_ALARM_LIST_RSP
+WristbandManager<--L2Layer:onSettingCmdRequestAlarmList：  AlarmsPacket
+BTCallback<--WristbandManager:onAlarmsDataReceive
+deactivate
+
+WristbandManager->WristbandManager:sendNotifyModeRequest：请求手环通知设置
+activate WristbandManager
+WristbandManager->L2Layer:SettingCmdRequestNotifySwitchSetting:CMD_SETTING:KEY_SETTING_NOTIFY_SWITCH_REQ
+L2Layer<--L2Layer:onDataReceive:CMD_SETTING  :  KEY_SETTING_NOTIFY_SWITCH_RSP
+WristbandManager<--L2Layer:onSettingCmdRequestNotifySwitch：keyData[0]
+BTCallback<--WristbandManager:onNotifyModeSettingReceive
+
+deactivate
+WristbandManager->WristbandManager:sendLongSitRequest：请求sit设置
+activate WristbandManager
+WristbandManager->L2Layer:SettingCmdRequestLongSitSetting:CMD_SETTING:KEY_SETTING_SIT_TOOLONG_SWITCH_REQ
+L2Layer<--L2Layer:onDataReceive:CMD_SETTING  :  KEY_SETTING_SIT_TOOLONG_SWITCH_RSP
+WristbandManager<--L2Layer:onSettingCmdRequestLongSit：keyData[0]
+BTCallback<--WristbandManager:onLongSitSettingReceive
+deactivate
+
+WristbandManager->WristbandManager:sendTurnOverWristRequest：请求手环翻腕
+activate WristbandManager
+WristbandManager->L2Layer:SettingCmdRequestTurnOverWristSetting:CMD_SETTING:KEY_SETTING_TURN_OVER_WRIST_REQ
+L2Layer<--L2Layer:onDataReceive:CMD_SETTING  :  KEY_SETTING_TURN_OVER_WRIST_RSP
+WristbandManager<--L2Layer:onTurnOverWristSettingReceive
+BTCallback<--WristbandManager:onTurnOverWristSettingReceive
+deactivate
+
+WristbandManager->WristbandManager:sendContinueHrpParamRequest：请求hrp设置
+activate WristbandManager
+WristbandManager->L2Layer:SportDataCmdHrpContinueParamRequest:CMD_SETTING:KEY_SPORTS_HRP_CONTINUE_PARAMS_GET
+L2Layer<--L2Layer:onDataReceive:CMD_SETTING  :  KEY_SPORTS_HRP_CONTINUE_PARAMS_RSP
+WristbandManager<--L2Layer:onSportDataCmdHrpContinueParamRsp
+BTCallback<--WristbandManager:onHrpContinueParamRsp
+deactivate
+
+WristbandManager->WristbandManager:updateWristState
+deactivate
+WristbandManager->BTCallback:onLoginStateChange
+note left:STATE_WRIST_LOGIN
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@enduml

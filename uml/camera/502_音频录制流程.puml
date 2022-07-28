@@ -1,0 +1,134 @@
+@startuml
+title 502_音频录制流程
+
+[-->AudioRecord: getMinBufferSize
+AudioRecord->android_media_AudioRecord.cpp: native_get_min_buff_size-->\n android_media_AudioRecord_get_min_buff_size
+android_media_AudioRecord.cpp->AudioRecord.cpp:getMinFrameCount
+AudioRecord.cpp->AudioSystem.cpp:getInputBufferSize
+AudioSystem.cpp->AudioFlinger.cpp:getInputBufferSize
+
+
+...
+
+
+
+
+[-->AudioRecord: new
+AudioRecord->android_media_AudioRecord.cpp: native_setup-->\n android_media_AudioRecord_setup
+android_media_AudioRecord.cpp->AudioRecord.cpp:set
+AudioRecord.cpp->AudioRecord.cpp:openRecord_l
+note left
+当应用层new AudioRecord时，系统建立起了输入流，并创建了RecordThread线程
+end note
+
+activate AudioRecord.cpp
+AudioRecord.cpp->AudioSystem.cpp:get_audio_flinger
+note right
+sm = defaultServiceManager()//获取SM
+binder = sm->getService(String16(“media.audio_flinger”));//获取对应的服务
+gAudioFlinger = interface_cast(binder)//获取IAF对象，并将binder传入其中。
+end note
+AudioRecord.cpp<<--AudioSystem.cpp:IAudioFlinger
+
+AudioRecord.cpp->AudioSystem.cpp:getInputForAttr
+AudioSystem.cpp->AudioPolicyInterfaceImpl.cpp:getInputForAttr
+AudioPolicyInterfaceImpl.cpp->AudioPolicyManager.cpp:getInputForAttr
+AudioPolicyManager.cpp->AudioPolicyManager.cpp:getInputForDevice
+note left:audioSession->changeActiveCount(1);
+
+AudioRecord.cpp->IAudioFlinger.cpp:openRecord
+
+note right
+data传输数据
+remote()->transact调用远端Service进行ipc
+record = interface_cast 获取远端返回的结果
+end note
+IAudioFlinger.cpp->AudioFlinger.cpp:openRecord
+note right
+RecordThread *thread = checkRecordThread_l(input)
+recordTrack = thread->createRecordTrack_l（…）
+recordHandle = new RecordHandle(recordTrack)
+end note
+
+IAudioFlinger.cpp<<--AudioFlinger.cpp:RecordHandle
+AudioRecord.cpp<<--IAudioFlinger.cpp:RecordHandle
+deactivate AudioRecord.cpp
+
+
+...
+[-->AudioRecord: startRecording
+AudioRecord->android_media_AudioRecord.cpp:  native_start-->\n android_media_AudioRecord_start
+android_media_AudioRecord.cpp->AudioRecord.cpp:start
+AudioRecord.cpp->Tracks.cpp:AudioFlinger::RecordHandle::start
+note left
+在startRecording函数中，他建立起了录音通道路由route，并且开启了应用
+层的录音线程，并把录音数据从驱动中读取到AudioBuffer环形缓冲区来。此时录
+音设备节点已经被open了，并开始read数据了
+end note
+Tracks.cpp->Tracks.cpp:AudioFlinger::RecordThread::RecordTrack::start
+Tracks.cpp->Threads.cpp:AudioFlinger::RecordThread::start
+Threads.cpp->AudioSystem.cpp:startInput
+AudioSystem.cpp->AudioPolicyInterfaceImpl.cpp:startInput
+AudioPolicyInterfaceImpl.cpp->AudioPolicyManager.cpp:startInput
+
+
+
+
+...
+[-->AudioRecord: read
+AudioRecord->android_media_AudioRecord.cpp: native_read_in_short_array-->\n android_media_AudioRecord_readInByteArray
+android_media_AudioRecord.cpp->AudioRecord.cpp:read
+AudioRecord.cpp->AudioRecord.cpp:obtainBuffer
+note left
+每次通过obtainBuffer获取共享内存中的数据，然后通过memcpy把数据拷
+贝到应用层的buffer中，直到把整个userSize都拷贝到buffer中为止.
+通过RecordThread线程把数据从硬件层读取到IMemory中，然后应用层在去IMemory中去读取
+end note
+...
+
+
+
+[-->AudioRecord: stop
+AudioRecord->android_media_AudioRecord.cpp: native_stop-->\n android_media_AudioRecord_stop
+android_media_AudioRecord.cpp->AudioRecord.cpp:stop
+AudioRecord.cpp->Tracks.cpp:AudioFlinger::RecordHandle:stop
+note left
+在stop函数中，主要工作就是把AudioRecordThread与RecordThread两个线程挂起来了，
+同时把startRecording方法中好不容易建立起来的input流也干掉了
+end note
+Tracks.cpp->Tracks.cpp: AudioFlinger::RecordHandle::stop_nonvirtual
+Tracks.cpp->Tracks.cpp: AudioFlinger::RecordThread::RecordTrack::stop()
+Tracks.cpp->Threads.cpp:  AudioFlinger::RecordThread::stop
+Tracks.cpp->AudioSystem.cpp: AudioSystem::stopInput
+AudioSystem.cpp->AudioPolicyInterfaceImpl.cpp:AudioPolicyService::stopInput
+AudioPolicyInterfaceImpl.cpp->AudioPolicyManager.cpp: AudioPolicyManager::stopInput
+AudioPolicyManager.cpp->AudioPolicyManager.cpp: AudioPolicyManager::resetInputDevice
+
+...
+
+
+
+[-->AudioRecord: release
+AudioRecord->android_media_AudioRecord.cpp: native_release-->\n android_media_AudioRecord_release
+android_media_AudioRecord.cpp->AudioRecord.cpp:release
+AudioRecord.cpp->Tracks.cpp:AudioFlinger::RecordHandle:release
+note left
+在release函数中，主要就是释放掉Android系统中之前申请到的各种资源，以及
+销毁AudioRecordThread与RecordThread两个线程，最后关闭mic的设备节点，
+完成Audio所有软硬件资源的释放。同时把startRecording方法中好不容易建立起
+来的input流也干掉了
+end note
+Tracks.cpp->Tracks.cpp:AudioFlinger::RecordHandle::~RecordHandle
+Tracks.cpp->Tracks.cpp:AudioFlinger::RecordThread::RecordTrack::destroy
+Tracks.cpp->AudioSystem.cpp:AudioSystem::releaseInput
+AudioSystem.cpp->AudioPolicyInterfaceImpl.cpp:AudioPolicyService::releaseInput
+AudioPolicyInterfaceImpl.cpp->AudioPolicyManager.cpp: AudioPolicyManager::releaseInput
+AudioPolicyManager.cpp->AudioPolicyManager.cpp: AudioPolicyManager::closeInput
+AudioPolicyManager.cpp->AudioPolicyClientImpl.cpp: AudioPolicyService::AudioPolicyClient::closeInput
+AudioPolicyClientImpl.cpp->AudioFlinger.cpp: AudioFlinger::closeInput
+AudioFlinger.cpp->AudioFlinger.cpp: AudioFlinger::closeInput_nonvirtual
+AudioFlinger.cpp->AudioFlinger.cpp: AudioFlinger::closeInputFinish
+AudioFlinger.cpp->audio_hw.c:adev_close_input_stream
+
+
+@enduml

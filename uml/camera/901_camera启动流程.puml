@@ -1,0 +1,53 @@
+@startuml
+title 901_camera启动流程
+
+CameraActivity -> CameraActivity:onCreateTasks
+
+create CameraAppUI
+CameraActivity ->CameraAppUI:new
+CameraActivity->CameraAppUI:onCreate
+
+
+create ModeManager
+CameraActivity ->ModeManager:new
+CameraActivity ->ModeManager:create
+ModeManager->ModeManager:getDefaultModeKey
+note left:根据intent类型获取不同的模式\n单张:IntentPhotoModeEntry\n多张:IntentMultiPhotoModeEntry
+ModeManager->ModeManager:createMode
+
+create IntentPhotoMode
+ModeManager ->IntentPhotoMode:IntentPhotoModeEntry.createInstance
+ModeManager->ModeManager:sendToTarget
+note left:MSG_MODE_INIT
+ModeManager ->IntentPhotoMode:init
+
+ModeManager->FeatureProvider:registerFeatureLoadDoneListener
+FeatureProvider->FeatureProvider:postNotifiedPluginFeatureLoadDone
+FeatureProvider->ModeManager:onPluginLoadDone
+ModeManager->CameraAppUI:registerMode
+CameraAppUI->ShutterButtonManager:registerDone
+ShutterButtonManager->ShutterView:setOnShutterButtonListener
+ShutterView->ShutterButton:setOnShutterButtonListener
+
+...
+ShutterButton->ShutterButton:performClick
+ShutterButton->ShutterButtonManager:onShutterButtonClicked
+ShutterButtonManager->CameraModeBase:onShutterButtonClick
+CameraModeBase->PhotoMode:doShutterButtonClick
+note left: MSG_MODE_ON_SHUTTER_BUTTON_CLICK
+PhotoMode->PhotoDevice2Controller:takePicture
+PhotoDevice2Controller->PhotoDevice2Controller:captureStillPicture
+PhotoDevice2Controller->Camera2CaptureSessionProxy:captureBurst
+Camera2CaptureSessionProxy->Camera2Handler:handleRequestMessage
+note left:Camera2Actions.CAPTURE_BURST
+Camera2Handler->Camera2Handler:startBurstCapture
+
+
+...
+MTKSuperCaptureResult<<--]:onImageAvailable
+MTKSuperCaptureResult->MTKSuperCaptureResult:procImageEffect
+MTKSuperCaptureResult->PhotoDevice2Controller:saveData
+PhotoDevice2Controller->IntentPhotoMode: onDataReceived
+
+
+@enduml

@@ -1,0 +1,80 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+title:文件传输期间开启ota流程
+
+participant FileSyncStateMachine
+participant FileSyncManager
+participant OtaManager
+participant DeviceController
+
+autonumber
+
+== ota申请OTA_SESSION==
+
+OtaManager->OtaManager:requestTransfer
+OtaManager -> OtaManager: requestTransferInternal
+note right
+msg0011(DATA_CHANNEL_STATUS)
+msg0012(MSG_REQUEST_TRANSFER,session, 0, msg0011)
+end note
+
+OtaManager -> DeviceController: FileSyncingState.processMessage
+note right
+case MSG_REQUEST_TRANSFER:  //对应msg0012.what
+//otaTransferRequest(msg0012.arg1, (Message) msg0012.obj), 放到列表里
+addTransferRequest(new TransferRequest(msg.arg1, (Message) msg.obj));
+request.reply(TRANSFER_BUSY);//然后fileTransferRequest执行reply(TRANSFER_BUSY)
+end note
+DeviceController -> DeviceController: fileTransferRequest.reply(TRANSFER_BUSY)
+note left: 调用mag001反馈回去
+DeviceController->FileSyncManager: handleMessage
+note left: case DATA_CHANNEL_STATUS: // 对应msg001.what
+FileSyncManager->FileSyncManager: onReady
+note left: MSG_TRANSFER_BUSY
+FileSyncManager->FileSyncStateMachine:SyncingState.processMessage
+note right: case MSG_TRANSFER_BUSY:  needQuit = true;  handled = HANDLED;
+...
+
+FileSyncManager->FileSyncManager:onDataReceive
+note left: 等待接收完一组文件数据
+FileSyncManager->FileSyncManager:handleFileFragment
+FileSyncManager->FileSyncStateMachine:SyncingState.processMessage
+note left: MSG_SYNC_SAVE_FILE
+FileSyncStateMachine->FileSyncManager:saveFragmentAndContinue
+note left:写文件,并发起下一组请求:MSG_SYNC_CONTINUE
+FileSyncManager->FileSyncStateMachine:SyncingState.processMessage
+note right
+case MSG_SYNC_CONTINUE:
+    if (needQuit) {
+        manager.saveLastSyncRequest();
+        transitionTo(idleState);
+    }
+end note
+FileSyncStateMachine->FileSyncStateMachine:SyncState.exit
+note right: manager.releaseTrans(FILE_TRANSFER_SESSION);
+FileSyncStateMachine->FileSyncManager:releaseTrans
+FileSyncManager->DeviceController:FileSyncingState.processMessage
+note right
+case MSG_RELEASE_TRANSFER:
+    sendMessage(MSG_FILE_TRANSFER_STOP);
+case MSG_FILE_TRANSFER_STOP:
+    transitionTo(idleState);
+end note
+DeviceController->DeviceController:IdleState.enter
+note left
+TransferRequest request = getTopTransferRequest();// 此处获取的是0012里放入列表的 otaTransferRequest
+obtainMessage(request.getStateMessage(), request).sendToTarget();// 开启解析 otaTransferRequest 流程
+// 封装一个msg, msg0013(otaTransferRequest.getStateMessage(), otaTransferRequest)
+//otaTransferRequest.getStateMessage()为 MSG_START_OTA
+end note
+DeviceController->DeviceController:IdleState.processMessage
+note right: case MSG_START_OTA:
+DeviceController->DeviceController:OtaState.processMessage
+note right: case MSG_START_OTA:
+DeviceController -> DeviceController: fileTransferRequest.reply(TRANSFER_READY)
+DeviceController->OtaManager:handleMessage
+note right: case DATA_CHANNEL_STATUS:
+OtaManager->OtaManager:onReady
+
+@enduml

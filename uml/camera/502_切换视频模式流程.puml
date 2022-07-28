@@ -1,0 +1,19 @@
+@startuml
+title 502_camera切换视频模式流程
+
+CameraAppUI->CameraAppUI:MyGestureListener.onScroll
+CameraAppUI->CameraAppUI:onModeSelected
+CameraAppUI->CameraActivity:onModeSelected
+CameraActivity->PhotoModule:closeModule
+CameraActivity->PhotoModule:destroyModule
+CameraActivity->CameraActivity:setModuleFromModeIndex
+CameraActivity->CameraActivity:openModule
+CameraActivity->VideoModule:init
+VideoModule->AutoVideoModule:createUI
+create AutoVideoUI
+AutoVideoModule -> AutoVideoUI:new
+AutoVideoUI->DreamVideoUI:init
+DreamVideoUI->VideoUI:init
+VideoUI->DreamVideoUI:initUI
+DreamVideoUI->AutoVideoUI:fitTopPanel
+@enduml

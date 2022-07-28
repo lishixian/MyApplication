@@ -1,0 +1,57 @@
+@startuml
+
+title server_client 交互流程
+
+
+participant server
+participant BluetoothManager
+participant BluetoothGattService
+participant BluetoothGattServer
+participant BluetoothGattServerCallback
+
+participant BluetoothGatt
+
+participant BluetoothGattCallback
+participant BluetoothDevice
+participant client
+
+
+server->server:getSystemService
+create BluetoothGattServerCallback
+server->BluetoothGattServerCallback:
+server->BluetoothManager:openGattServer
+server<--BluetoothManager:BluetoothGattServer
+create BluetoothGattService
+server->BluetoothGattService:new
+server->BluetoothGattService:addCharacteristic
+==添加服务==
+server->BluetoothGattServer:addService(BluetoothGattService)
+BluetoothGattServerCallback-->BluetoothGattServerCallback:onServiceAdded
+
+
+client-->client:getSystemService
+create BluetoothGattCallback
+client->BluetoothGattCallback:new
+
+==创建连接==
+client-->BluetoothDevice:connectGatt
+BluetoothGattServerCallback-->BluetoothGattServerCallback:onConnectionStateChange
+BluetoothGattCallback-->BluetoothGattCallback:onConnectionStateChange
+BluetoothGattCallback-->BluetoothGatt:discoverServices
+BluetoothGattCallback-->BluetoothGattCallback:onServicesD1iscovered
+
+
+BluetoothGattCallback-->BluetoothGatt:requestMtu
+
+==client写数据==
+client-->BluetoothGatt:writeCharacteristic
+BluetoothGattServerCallback-->BluetoothGattServerCallback:onCharacteristicWriteRequest
+BluetoothGattCallback-->BluetoothGattCallback:onCharacteristicWrite
+
+==server收到数据后回数据==
+server->BluetoothGattServer:notifyCharacteristicChanged
+BluetoothGattServerCallback-->BluetoothGattServerCallback:onNotificationSent
+BluetoothGattCallback-->BluetoothGattCallback:onCharacteristicChanged
+
+
+@enduml

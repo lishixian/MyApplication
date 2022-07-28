@@ -1,0 +1,39 @@
+@startuml
+title 502_表格识别
+hide footbox
+
+group excel生成流程
+autonumber "<b>0."
+[->ocr客户端: 拍照
+ocr客户端->业务:上传照片
+业务->T4:上传服务器t4解析
+业务<<--T4:返回json
+ocr客户端<<--业务:返回json
+ocr客户端->业务:上传json
+ocr客户端<<--业务:excel
+end
+
+
+group 查看流程
+autonumber "<b>0."
+[->ocr客户端: 拍照
+ocr客户端->业务:上传照片
+业务->T4:上传服务器t4解析
+业务<<--T4:返回json
+ocr客户端<<--业务:返回json
+ocr客户端->H5:上传json
+H5->H5:生成H5
+ocr客户端<<--H5:返回url
+ocr客户端->ocr客户端:browser展示
+ocr客户端->H5:上传json_编辑
+H5->H5:生成H5
+ocr客户端<<--H5:返回url
+ocr客户端->ocr客户端:browser展示
+end
+
+
+
+
+
+
+@enduml

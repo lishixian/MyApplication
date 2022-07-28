@@ -1,5 +1,13 @@
 package com.example.myapplication;
 
+import android.app.Activity;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+
+import java.lang.ref.WeakReference;
+import java.util.logging.LogRecord;
+
 /**
  *
  * 验证ThreadLocal可以区分不同的线程
@@ -74,6 +82,26 @@ public class ThreadLocalTest {
 
             mThreadLocal2.set(name + "的threadLocal——222");
             System.out.println(name + "：" + mThreadLocal2.get());
+        }
+    }
+
+    private static class MyHandler extends Handler {
+        private final WeakReference<Activity> activityWeakReference;
+        public MyHandler(Activity activity){
+            super(Looper.myLooper());
+            this.activityWeakReference = new WeakReference<>(activity);
+        }
+
+        @Override
+        public void handleMessage(Message msg){
+            if(activityWeakReference.get() == null){
+                return;
+            }
+
+            switch (msg.what){
+
+            }
+            super.handleMessage(msg);
         }
     }
 

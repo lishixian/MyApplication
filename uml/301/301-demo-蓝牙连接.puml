@@ -1,0 +1,132 @@
+@startuml
+title 301-demo-蓝牙连接时序图
+
+
+participant WristbandDemoApplication
+participant BackgroundScanAutoConnected
+participant ScannerPresenter
+participant LeScannerV21
+
+
+-> WristbandDemoApplication: onCreate
+create WristbandManager
+WristbandDemoApplication -> WristbandManager:initial
+create ApplicationLayer
+WristbandManager->ApplicationLayer: new
+create TransportLayer
+ApplicationLayer->TransportLayer:new
+create TransportLayerPacket
+TransportLayer->TransportLayerPacket:new
+create GattLayer
+TransportLayer->GattLayer:new
+create BackgroundScanAutoConnected
+WristbandDemoApplication -> BackgroundScanAutoConnected: initial
+create ScannerPresenter
+BackgroundScanAutoConnected->ScannerPresenter:new
+create LeScannerV21
+ScannerPresenter->LeScannerV21:new
+
+==搜索设备==
+BackgroundScanAutoConnected->BackgroundScanAutoConnected:forceLeScan
+BackgroundScanAutoConnected->BackgroundScanAutoConnected:scanLeDevice
+BackgroundScanAutoConnected->ScannerPresenter:scanDevice
+note left: 搜索蓝牙设备
+ScannerPresenter->ScannerPresenter:scanLe
+ScannerPresenter->LeScannerV21:scanLeDevice
+LeScannerV21->LeScannerV21:startScan
+...
+LeScannerV21<--LeScannerV21:onScanResult
+LeScannerV21->LeScannerV21:notifyLeScan
+LeScannerV21->ScannerPresenter:onLeScan
+ScannerPresenter->BackgroundScanAutoConnected:onNewDevice
+BackgroundScanAutoConnected->BackgroundScanAutoConnected:mHandler.handleMessage
+note left:MSG_FIND_BONDED_DEVICE
+
+==建立GATT连接==
+BackgroundScanAutoConnected->WristbandManager:Connect： 找到合适的地址后，使用该地址进行蓝牙连接
+WristbandManager->ApplicationLayer:connect
+ApplicationLayer->TransportLayer:connect
+TransportLayer->TransportLayer:startTxSchedule
+TransportLayer->TransportLayer:startRxSchedule
+note left: 开启两个线程，Tx发送，Rx接收
+TransportLayer->GattLayer:connect
+...
+GattLayer->GattLayer:onConnectionStateChange
+GattLayer->BluetoothGatt:requestMtu
+note left: 设置MTU：240
+GattLayer->GattLayer:onMtuChanged
+GattLayer->GattLayer:discoverServices
+GattLayer->GattLayer:onServicesDiscovered
+note left: 通过UUID，发现我们设置的Services和数据载体Characteristic
+...
+GattLayer->GattLayer:onDescriptorWrite
+GattLayer-->>TransportLayer:mGattCallback.onConnectionStateChange
+TransportLayer-->>ApplicationLayer:mTransportCallback.onConnectionStateChange
+ApplicationLayer-->>WristbandManager:mApplicationCallback.onConnectionStateChange
+note left:MSG_STATE_CONNECTED
+WristbandManager->BackgroundScanAutoConnected:mHandler.handleMessage
+WristbandManager<--BackgroundScanAutoConnected:StartLoginProcess
+activate WristbandManager
+WristbandManager->WristbandManager:RequestLogin
+WristbandManager->WristbandManager:RequestSetNeedInfo
+WristbandManager->WristbandManager:SetUserProfile
+
+==封装并发送数据-Tx==
+WristbandManager->ApplicationLayer:SettingCmdUserSetting
+deactivate
+ApplicationLayer->ApplicationLayerKeyPacket:preparePacket： key(１B);data.len（２B）;data
+ApplicationLayer<<--ApplicationLayerKeyPacket:
+ApplicationLayer->ApplicationLayerPacket:preparePacket：cmd(1B);version(1B)
+note left:封装L2
+ApplicationLayer<<--ApplicationLayerPacket:
+ApplicationLayer->TransportLayer:sendData
+TransportLayer->TransportLayerPacket:prepareDataPacket
+note left:封装L1
+TransportLayerPacket->TransportLayerPacket:preparePacket
+note left: magic:AB; er-ack-version:00; len(2B);crc(2B);seq(2B)
+TransportLayer<<--TransportLayerPacket:
+TransportLayer->TransportLayer:addToTxPacketList
+TransportLayer->TransportLayer:ThreadTx.run
+note left:每隔１秒查询一次是否有新数据，有就发送，重试３次
+activate TransportLayer
+TransportLayer->TransportLayer:getFromTxPacketList
+TransportLayer->TransportLayer:UnpackSendPacket
+note left:要发送的数据拆为每２０个字节发送一次，直到发送完毕
+activate TransportLayer
+TransportLayer->TransportLayer:sendGattLayerData
+TransportLayer->GattLayer:sendData
+deactivate
+TransportLayer->TransportLayer:tellUpstackPacketSend
+note left: 反馈发送成功, SequenceId++
+TransportLayer-->>ApplicationLayer:onDataSend
+deactivate
+...
+
+==接收数据-Rx==
+GattLayer-->>TransportLayer:onCharacteristicChanged
+TransportLayer->TransportLayer:mGattCallback.onDataReceive
+TransportLayer->TransportLayer:receiveData
+TransportLayer->TransportLayer:decodeReceiveData
+note left: 拆包L1
+activate TransportLayer
+TransportLayer->TransportLayerPacket:parseHeader:解析出magic，ack，总长度，crc，sequenid
+TransportLayer->TransportLayerPacket:parseData
+note left
+如果接收的数据长度等于Ｌ１中记录的总长度则返回: LT_FULL_PACKET
+否则，把数据暂存起来（存504B），返回LT_SUCCESS，等待剩余数据传过来
+end note
+deactivate
+TransportLayer->TransportLayer:sendAckPacket
+note left:向手环发送成功的ack
+TransportLayer->TransportLayer:addToRxPacketList
+TransportLayer->TransportLayer:ThreadRx.run
+note left:每隔１秒查询一次是否有新数据，有就拆包
+activate TransportLayer
+TransportLayer->TransportLayer:getFromRxPacketList
+TransportLayer->ApplicationLayer:onDataReceive
+ApplicationLayer->ApplicationLayerPacket:parseData: 拆包L2: cmd(1B);version(1B)
+note left: 拆包L2
+ApplicationLayer->ApplicationLayerKeyPacket:parseData: 拆出 key（1B）；len（2B）;data
+deactivate
+
+@enduml

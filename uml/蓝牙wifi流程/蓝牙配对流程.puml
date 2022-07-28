@@ -1,0 +1,68 @@
+@startuml
+title 蓝牙配对时序图
+hide footbox
+
+
+
+box "packages/apps/Settings/"
+participant DeviceListPreferenceFragment
+participant BluetoothDevicePreference
+end box
+DeviceListPreferenceFragment->DeviceListPreferenceFragment:onPreferenceTreeClick
+note right: 点击配对
+DeviceListPreferenceFragment->BluetoothDevicePreference:onClicked
+BluetoothDevicePreference->BluetoothDevicePreference:pair
+
+box "frameworks/base/packages/SettingsLib"
+participant CachedBluetoothDevice
+end box
+BluetoothDevicePreference->CachedBluetoothDevice:startPairing
+
+box "frameworks/base/core"
+participant BluetoothDevice
+end box
+CachedBluetoothDevice->BluetoothDevice:createBond
+BluetoothDevice->AdapterService:createBond
+
+box "packages/apps/Bluetooth"
+participant AdapterService
+participant BondStateMachine
+participant JniCallbacks
+end box
+AdapterService->BondStateMachine:CREATE_BOND
+BondStateMachine->BondStateMachine:createBond
+BondStateMachine->com_android_bluetooth_btservice_AdapterService.cpp:createBondNative
+
+box "packages/apps/Bluetooth/jni"
+participant com_android_bluetooth_btservice_AdapterService.cpp
+end box
+com_android_bluetooth_btservice_AdapterService.cpp->bluetooth.cc:create_bond
+
+box "system/bt"
+participant bluetooth.cc
+participant btif_dm.cc
+participant bta_dm_api.c
+participant bta_dm_act.cc
+participant btm_sec.c
+participant hcicmds.cc
+end box
+bluetooth.cc->btif_dm.cc:btif_dm_create_bond
+btif_dm.cc->btif_dm.cc:btif_dm_generic_evt
+note left:BTIF_DM_CB_CREATE_BOND
+btif_dm.cc->btif_dm.cc:btif_dm_cb_create_bond
+btif_dm.cc->bta_dm_api.c:BTA_DmBondByTransport
+bta_dm_api.c->bta_dm_act.cc:bta_dm_bond
+bta_dm_act.cc->btm_sec.c:BTM_SecBondByTransport
+btm_sec.c->btm_sec.c:btm_sec_bond_by_transport
+btm_sec.c->hcicmds.cc:btsnd_hcic_write_pin_type
+
+
+...
+btif_dm.cc<<--]:BTA_DM_AUTH_CMPL_EVT
+btif_dm.cc->btif_dm.cc:bond_state_changed
+btif_dm.cc-->>com_android_bluetooth_btservice_AdapterService.cpp:bond_state_changed_callback
+note left: HAL_CBACK(bt_hal_cbacks, bond_state_changed_cb, status, &tmp, state)
+com_android_bluetooth_btservice_AdapterService.cpp-->>JniCallbacks:bondStateChangeCallback
+JniCallbacks-->>BondStateMachine:bondStateChangeCallback
+
+@enduml

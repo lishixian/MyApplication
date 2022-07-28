@@ -1,0 +1,67 @@
+@startuml
+
+title 蓝牙扫描时序图
+hide footbox
+
+
+
+box "packages/apps/Settings/"
+participant BluetoothPairingDetail
+end box
+BluetoothPairingDetail-> BluetoothPairingDetail: enableScanning
+
+
+box "frameworks/base/packages/SettingsLib/"
+participant LocalBluetoothAdapter
+end box
+BluetoothPairingDetail->LocalBluetoothAdapter:startScanning
+
+
+box "frameworks/base/core/"
+participant BluetoothAdapter
+end box
+LocalBluetoothAdapter->BluetoothAdapter:startDiscovery
+
+
+box "packages/apps/Bluetooth"
+participant AdapterService
+participant JniCallbacks
+end box
+BluetoothAdapter->AdapterService:startDiscovery
+
+
+
+box "JNI"
+participant com_android_bluetooth_btservice_AdapterService.cpp
+end box
+AdapterService->com_android_bluetooth_btservice_AdapterService.cpp:startDiscoveryNative
+
+
+box "蓝牙协议栈：system/bt/"
+participant bluetooth.cc
+participant btif_dm.cc
+participant bta_dm_api.cc
+participant bta_dm_act.cc
+participant btm_ble_gap.cc
+participant btm_inq.cc
+end box
+com_android_bluetooth_btservice_AdapterService.cpp->bluetooth.cc:start_discovery
+bluetooth.cc->btif_dm.cc:btif_dm_start_discovery
+note left: 设备管理相关功能
+btif_dm.cc->bta_dm_api.cc:BTA_DmSearch
+bta_dm_api.cc->bta_dm_act.cc:  bta_dm_rs_cback
+note left:BTA_DM_API_SEARCH_EVT
+bta_dm_act.cc->bta_dm_act.cc:bta_dm_search_start
+bta_dm_act.cc->btm_inq.cc:BTM_StartInquiry
+btm_inq.cc->btm_ble_gap.cc:btm_send_hci_scan_enable
+...
+
+bta_dm_act.cc<<--]:bta_dm_search_start
+bta_dm_act.cc-->>btif_dm.cc:bte_search_devices_evt
+btif_dm.cc->btif_dm.cc:btif_dm_search_devices_evt
+note left:HAL_CBACK(bt_hal_cbacks, device_found_cb,num_properties, properties)
+btif_dm.cc-->>com_android_bluetooth_btservice_AdapterService.cpp:device_found_callback
+com_android_bluetooth_btservice_AdapterService.cpp-->>JniCallbacks:deviceFoundCallback
+note left: new Intent(BluetoothDevice.ACTION_FOUND);
+
+@enduml

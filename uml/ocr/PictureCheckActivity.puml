@@ -1,0 +1,17 @@
+@startuml
+title ocr界面点击流程
+hide footbox
+
+[->PictureCheckActivity
+PictureCheckActivity->PictureCheckActivity:onCreate
+create PictureCheckController
+PictureCheckActivity->PictureCheckController: new
+PictureCheckController->PictureCheckController:onClick
+note right
+pic_check_edit
+pic_check_ocr
+pic_check_share
+end note
+PictureCheckController->PictureCheckActivity:onEdit
+
+@enduml

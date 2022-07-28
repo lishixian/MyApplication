@@ -1,0 +1,119 @@
+@startuml
+
+title sdk_server 开启流程
+
+
+[-> SystemServer: main
+SystemServer -> SystemServer: run
+activate SystemServer
+SystemServer -> SystemServer: startOtherServices
+activate SystemServer
+SystemServer -> SystemServiceManager: startService
+note right: IFLYNET_SERVICE_CLASS: \n com.iflyrec.net.server.IflyNetworkService
+activate SystemServiceManager
+create IflyNetworkService
+SystemServiceManager -> IflyNetworkService: constructor.newInstance
+create IflyNetworkServiceImpl
+IflyNetworkService -> IflyNetworkServiceImpl: new
+SystemServiceManager -> SystemServiceManager: startService
+activate SystemServiceManager
+SystemServiceManager -> IflyNetworkService: onStart
+activate IflyNetworkService
+IflyNetworkService -> IflyNetworkService: publishBinderService
+activate IflyNetworkService
+deactivate IflyNetworkService
+deactivate IflyNetworkService
+deactivate SystemServiceManager
+deactivate SystemServiceManager
+
+SystemServer -> SystemServiceManager: startBootPhase
+SystemServiceManager -> IflyNetworkService: onBootPhase
+IflyNetworkService -> IflyNetworkServiceImpl: start
+create ServiceHandler
+IflyNetworkServiceImpl -> ServiceHandler: new
+create ConfigStateMachine
+IflyNetworkServiceImpl -> ConfigStateMachine: new
+
+activate ConfigStateMachine
+note over BluetoothBroadcastReceiver:监听蓝牙状态
+create BluetoothBroadcastReceiver
+ConfigStateMachine -> BluetoothBroadcastReceiver: new
+
+note over WifiConfig:开关连接wifi
+create WifiConfig
+ConfigStateMachine -> WifiConfig: new
+
+note over WifiPortalControl:监听PORTAL状态
+create WifiPortalControl
+ConfigStateMachine -> WifiPortalControl: new
+
+note over WifiBroadcastReceiver:监听wifi状态
+create WifiBroadcastReceiver
+ConfigStateMachine -> WifiBroadcastReceiver: new
+
+note over TetherChangeReceiver: 监听Tether状态
+create TetherChangeReceiver
+ConfigStateMachine -> TetherChangeReceiver: new
+deactivate ConfigStateMachine
+deactivate SystemServer
+deactivate SystemServer
+
+...
+BluetoothBroadcastReceiver -> BluetoothBroadcastReceiver:onReceive
+note left: BluetoothAdapter.ACTION_STATE_CHANGED
+BluetoothBroadcastReceiver -->> ConfigStateMachine: MSG_BLUETOOTH_ON
+note left:DefaultState -> InitialState
+ConfigStateMachine -> ConfigStateMachine:InitialState.enter
+activate ConfigStateMachine
+create BluetoothControl
+ConfigStateMachine -> BluetoothControl: new
+ConfigStateMachine -> ConfigStateMachine:CMD_AUTO_START
+deactivate ConfigStateMachine
+
+note over LeAdvertiserConfig: 监听BLE广播
+create LeAdvertiserConfig
+ConfigStateMachine -> LeAdvertiserConfig: new
+LeAdvertiserConfig -> LeAdvertiserConfig: initLeAdvertiser
+LeAdvertiserConfig -> BluetoothAdapter: getBluetoothLeAdvertiser
+note over BluetoothGattConfig: 蓝牙gatt配置
+create BluetoothGattConfig
+ConfigStateMachine -> BluetoothGattConfig: new
+BluetoothGattConfig -> BluetoothGattConfig: create BluetoothGattServerCallback
+note over BluePanTetherConfig: 蓝牙Tether配置
+create BluePanTetherConfig
+ConfigStateMachine -> BluePanTetherConfig: new
+ConfigStateMachine -> BluetoothControl:BeFound
+BluetoothControl -> BluetoothAdapter: setScanMode
+ConfigStateMachine -> ConfigStateMachine: CMD_BLUE_BEFOUND
+note left:InitialState -> GattConfigState
+ConfigStateMachine -> ConfigStateMachine:GattConfigState.enter
+ConfigStateMachine -> BluetoothGattConfig: initServices  注册服务
+BluetoothGattConfig -> BluetoothGattServer: addService
+...
+BluetoothGattServer -->> BluetoothGattConfig: BluetoothGattServerCallback.onServiceAdded
+BluetoothGattConfig -->> ConfigStateMachine: MSG_GATT_INITSERVER_SUCCEED
+note left:GattConfigState -> StartAdverState
+
+ConfigStateMachine -> LeAdvertiserConfig: start
+LeAdvertiserConfig -> BluetoothLeAdvertiser: startAdvertising
+note left: 发起BLE广播
+LeAdvertiserConfig -> LeAdvertiserConfig: onStartSuccess
+note left: MSG_BLE_START_SUCCEED
+
+...
+BluetoothGattConfig -> BluetoothGattConfig: onConnectionStateChange
+note left: BluetoothProfile.STATE_CONNECTED
+BluetoothGattConfig -->> ConfigStateMachine: MSG_GATT_CONNECTED
+note left: StartAdverState->GattConnectedState
+
+
+...
+
+BluetoothGattConfig -> BluetoothGattConfig: onCharacteristicWriteRequest
+BluetoothGattConfig -> BluetoothGattConfig: onResponseToClient
+BluetoothGattConfig -> ConfigStateMachine: CMD_GET_WIFI_STATE
+ConfigStateMachine -> BluetoothGattConfig: setWifiState   mCharacteristicConnectState : UUID_WIFI_STATE
+BluetoothGattConfig -> BluetoothGattConfig: sendNotificationToDevices
+BluetoothGattConfig -> BluetoothGattServer: notifyCharacteristicChanged
+
+@enduml

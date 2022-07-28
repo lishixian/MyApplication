@@ -1,0 +1,150 @@
+@startuml
+title band301
+
+
+participant BTManager
+participant BTCallback
+participant BleController
+participant ScannerPresenter
+participant LeScannerV21
+
+participant WristbandManager
+participant L2Layer
+participant L2KeyPacket
+participant L2CMDPacket
+participant L1Layer
+participant L1Packet
+
+-> BTManager: onCreate
+create WristbandManager
+BTManager -> WristbandManager:initial
+create L2Layer
+WristbandManager->L2Layer: new
+create L1Layer
+L2Layer->L1Layer:new
+create L1Packet
+L1Layer->L1Packet:new
+create GattLayer
+L1Layer->GattLayer:new
+create BleController
+BTManager -> BleController: initial
+create ScannerPresenter
+BleController->ScannerPresenter:new
+create LeScannerV21
+ScannerPresenter->LeScannerV21:new
+
+==搜索设备==
+BleController->BleController:forceLeScan
+BleController->BleController:scanLeDevice
+BleController->ScannerPresenter:scanDevice
+note left: 搜索蓝牙设备
+ScannerPresenter->ScannerPresenter:scanLe
+ScannerPresenter->LeScannerV21:scanLeDevice
+LeScannerV21->LeScannerV21:startScan
+...
+LeScannerV21<--LeScannerV21:onScanResult
+LeScannerV21->LeScannerV21:notifyLeScan
+LeScannerV21->ScannerPresenter:onLeScan
+ScannerPresenter->BleController:onNewDevice
+BleController->BleController:mHandler.handleMessage
+note left:MSG_FIND_BONDED_DEVICE
+
+==建立GATT连接==
+BleController->WristbandManager:Connect： 找到合适的地址后，使用该地址进行蓝牙连接
+WristbandManager->L2Layer:connect
+L2Layer->L1Layer:connect
+L1Layer->L1Layer:startTxSchedule
+L1Layer->L1Layer:startRxSchedule
+note left: 开启两个线程，Tx发送，Rx接收
+L1Layer->GattLayer:connect
+...
+GattLayer->GattLayer:onConnectionStateChange
+GattLayer->BluetoothGatt:requestMtu
+note left: 设置MTU：240
+GattLayer->GattLayer:onMtuChanged
+GattLayer->GattLayer:discoverServices
+GattLayer->GattLayer:onServicesDiscovered
+note left: 通过UUID，发现我们设置的Services和数据载体Characteristic
+...
+GattLayer->GattLayer:onDescriptorWrite
+GattLayer-->>L1Layer:mGattCallback.onConnectionStateChange
+L1Layer-->>L2Layer:mTransportCallback.onConnectionStateChange
+L2Layer-->>WristbandManager:mApplicationCallback.onConnectionStateChange
+note left:MSG_STATE_CONNECTED
+WristbandManager->BleController:mHandler.handleMessage
+WristbandManager<--BleController:StartLoginProcess
+activate WristbandManager
+WristbandManager->WristbandManager:RequestLogin
+WristbandManager->WristbandManager:RequestSetNeedInfo
+WristbandManager->WristbandManager:SetUserProfile
+
+==封装并发送数据-Tx==
+WristbandManager->L2Layer:SettingCmdUserSetting
+deactivate
+L2Layer->L2KeyPacket:preparePacket： key(１B);data.len（２B）;data
+L2Layer<<--L2KeyPacket:
+L2Layer->L2CMDPacket:preparePacket：cmd(1B);version(1B)
+note left:封装L2
+L2Layer<<--L2CMDPacket:
+L2Layer->L1Layer:sendData
+L1Layer->L1Packet:prepareDataPacket
+note left:封装L1
+L1Packet->L1Packet:preparePacket
+note left: magic:AB; er-ack-version:00; len(2B);crc(2B);seq(2B)
+L1Layer<<--L1Packet:
+L1Layer->L1Layer:addToTxPacketList
+L1Layer->L1Layer:ThreadTx.run
+note left:每隔１秒查询一次是否有新数据，有就发送，重试３次
+activate L1Layer
+L1Layer->L1Layer:getFromTxPacketList
+L1Layer->L1Layer:UnpackSendPacket
+note left:要发送的数据拆为每２０个字节发送一次，直到发送完毕
+activate L1Layer
+L1Layer->L1Layer:sendGattLayerData
+L1Layer->GattLayer:sendData
+deactivate
+L1Layer->L1Layer:tellUpstackPacketSend
+note left: 反馈发送成功, SequenceId++
+L1Layer-->>L2Layer:onDataSend
+deactivate
+...
+
+==接收数据-Rx==
+GattLayer-->>L1Layer:onCharacteristicChanged
+L1Layer->L1Layer:mGattCallback.onDataReceive
+L1Layer->L1Layer:receiveData
+L1Layer->L1Layer:decodeReceiveData
+note left: 拆包L1
+activate L1Layer
+L1Layer->L1Packet:parseHeader:解析出magic，ack，总长度，crc，sequenid
+L1Layer->L1Packet:parseData
+note left
+如果接收的数据长度等于Ｌ１中记录的总长度则返回: LT_FULL_PACKET
+否则，把数据暂存起来（存504B），返回LT_SUCCESS，等待剩余数据传过来
+end note
+deactivate
+L1Layer->L1Layer:sendAckPacket
+note left:向手环发送成功的ack
+L1Layer->L1Layer:addToRxPacketList
+L1Layer->L1Layer:ThreadRx.run
+note left:每隔１秒查询一次是否有新数据，有就拆包
+activate L1Layer
+L1Layer->L1Layer:getFromRxPacketList
+L1Layer->L2Layer:onDataReceive
+L2Layer->L2CMDPacket:parseData: 拆包L2: cmd(1B);version(1B)
+note left: 拆包L2
+L2Layer->L2KeyPacket:parseData: 拆出 key（1B）；len（2B）;data
+deactivate
+
+
+==handshake==
+BTManager->WristbandManager:handshake
+WristbandManager->L2Layer:handshake
+L2Layer->L1Layer:handshake
+L1Layer->L1Layer:sendData
+...
+L2Layer<--L2Layer:onDataReceive
+WristbandManager<--L2Layer:onHandshakeCallback
+BTCallback<--WristbandManager:onHandshakeCallback
+
+@enduml

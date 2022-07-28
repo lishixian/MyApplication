@@ -81,7 +81,8 @@ if (jvm->GetEnv((void**) &env, JNI_VERSION_1_4) != JNI_OK) {
     return -1;
 }
 
-这里调用了GetEnv函数获取JNIEnv结构体指针，其实JNIEnv结构体是指向一个函数表的，该函数表指向了对应的JNI函数，我们通过调用这些JNI函数实现JNI编程，在后面我们还会对其进行介绍。
+这里调用了GetEnv函数获取JNIEnv结构体指针，其实JNIEnv结构体是指向一个函数表的，该函数表指向了对应的JNI函数，我们通过调用这些JNI函数实现JNI编程，
+在后面我们还会对其进行介绍。
 获取Java对象，完成动态注册
 上面介绍了如何获取JNIEnv结构体指针，得到这个结构体指针后我们就可以调用JNIEnv中的RegisterNatives函数完成动态注册native方法了。该方法如下：
 jint RegisterNatives(jclass clazz, const JNINativeMethod* methods, jint nMethods)
@@ -103,7 +104,8 @@ JNINativeMethod nativeMethod[] = {{"dynamicLog", "()V", (void*)nativeDynamicLog}
 env->RegisterNatives(clz, nativeMethod, sizeof(nativeMethod)/sizeof(nativeMethod[0]));
 
 JNIEnv结构体
-上面提到JNIEnv这个结构体，它就老厉害了，指向一个函数表，该函数表指向一系列的JNI函数，我们通过调用这些JNI函数可以实现与Java层的交互，这里简单的看看几个定义的函数：
+上面提到JNIEnv这个结构体，它就老厉害了，指向一个函数表，该函数表指向一系列的JNI函数，我们通过调用这些JNI函数可以实现与Java层的交互，
+这里简单的看看几个定义的函数：
 ..........
 jfieldID GetFieldID(jclass clazz, const char* name, const char* sig)
 jboolean GetBooleanField(jobject obj, jfieldID fieldID)

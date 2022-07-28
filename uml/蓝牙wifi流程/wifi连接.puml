@@ -1,0 +1,65 @@
+@startuml
+title wifi连接
+hide footbox
+
+box "packages/apps/settings"
+participant WifiSettings
+participant WifiEnabler
+end box
+
+->WifiSettings:onSubmit
+WifiSettings->WifiManager:save
+note right:通过异步通道AsyncChannel来调用WifiServiceImpl的\nClientHandler来处理SAVE_NETWORK消息
+
+box "frameworks/base/wifi"
+participant WifiManager
+participant WifiServiceImpl
+participant WifiStateMachine
+participant WifiNative
+participant SupplicantStaIfaceHal
+end box
+
+WifiManager->WifiServiceImpl:SAVE_NETWORK
+WifiServiceImpl->WifiStateMachine:saveNetworkConfigAndSendReply
+WifiStateMachine->WifiStateMachine:broadcastWifiCredentialChanged
+WifiStateMachine->WifiStateMachine:startConnectToNetwork
+note left: CMD_START_CONNECT
+WifiStateMachine->WifiNative:connectToNetwork
+note left
+这个方法做了6件事：
+（1） 中止任何正在进行的扫描以免阻塞连接请求
+（2）移除wpa_supplicant里的所有现有网络（这会隐式触发断开连接）
+（3）在wpa_supplicant里添加一个新的网络
+（4）在wpa_supplicant中保存提供的configuration
+（5）在wpa_supplicant中选择新的网络
+（6）触发wpa_supplicant 的重新连接命令
+end note
+WifiNative->SupplicantStaIfaceHal:connectToNetwork
+SupplicantStaIfaceHal->SupplicantStaIfaceHal:addNetworkAndSaveConfig
+SupplicantStaIfaceHal->SupplicantStaIfaceHal:addNetwork
+SupplicantStaIfaceHal->SupplicantStaIfaceHal:saveWifiConfiguration
+
+...
+
+WifiStateMachine<<--]:NETWORK_CONNECTION_EVENT
+note left
+mWifiInfo.setBSSID(mLastBssid)
+mWifiInfo.setNetworkId(mLastNetworkId)
+mWifiInfo.setMacAddress(mWifiNative.getMacAddress(mInterfaceName))
+end note
+WifiStateMachine->WifiStateMachine:sendNetworkStateChangeBroadcast
+note left:NETWORK_STATE_CHANGED_ACTION
+WifiTracker<<--]:onReceive
+
+
+box "frameworks/base/packages/SettingsLib"
+participant WifiTracker
+end box
+WifiTracker->WifiTracker:fetchScansAndConfigsAndUpdateAccessPoints
+
+...
+WifiEnabler<<--]:onReceive
+note left:WIFI_STATE_CHANGED_ACTION
+WifiEnabler->WifiEnabler:handleWifiStateChanged
+
+@enduml

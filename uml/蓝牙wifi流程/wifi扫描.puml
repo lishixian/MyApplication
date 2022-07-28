@@ -1,0 +1,64 @@
+@startuml
+title wifi扫描
+hide footbox
+
+box "packages/apps/settings"
+participant WifiSettings
+participant WifiEnabler
+end box
+
+WifiSettings->WifiSettings:onActivityCreated
+WifiSettings->WifiTracker:create
+[-->>WifiEnabler:WIFI_STATE_CHANGED_ACTION
+note right:根据wifi状态更新ui
+
+box "frameworks/base/packages/SettingsLib"
+participant WifiTracker
+participant WifiManager
+end box
+-->>WifiTracker:onReceive
+note right:WIFI_STATE_CHANGED_ACTION
+WifiTracker->WifiTracker:updateWifiState
+WifiTracker->WifiTracker:Scanner.resume
+WifiTracker->WifiManager:startScan
+WifiManager->WifiServiceImpl:startScan
+
+
+box "frameworks/opt/net/wifi"
+participant WifiServiceImpl
+participant ScanRequestProxy
+participant WifiScanningServiceImpl
+participant WificondScannerImpl
+participant WifiNative
+participant WificondControl
+end box
+WifiServiceImpl->ScanRequestProxy:startScan
+ScanRequestProxy->WifiScanner:startScan
+
+box "frameworks/base/wifi"
+participant WifiScanner
+end box
+WifiScanner->WifiScanningServiceImpl:CMD_START_SINGLE_SCAN
+WifiScanningServiceImpl->WifiScanningServiceImpl:tryToStartNewScan
+WifiScanningServiceImpl->WificondScannerImpl:startSingleScan
+WificondScannerImpl->WifiNative:scan
+WifiNative->WificondControl:scan
+
+...
+WificondScannerImpl<<--]:SCAN_RESULTS_AVAILABLE_ACTION
+note left:SCAN_RESULTS_EVENT
+WificondScannerImpl->WificondScannerImpl:pollLatestScanData
+WificondScannerImpl->WifiNative:getScanResults
+
+
+...
+WifiTracker<<--]:SCAN_RESULTS_AVAILABLE_ACTION
+WifiTracker->WifiTracker:fetchScansAndConfigsAndUpdateAccessPoints
+WifiTracker->WifiManager:getScanResults
+WifiManager->WifiServiceImpl:getScanResults
+
+
+
+
+
+@enduml

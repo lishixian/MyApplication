@@ -1,0 +1,48 @@
+@startuml
+title 相册图片识别时序图
+hide footbox
+
+
+box "Camera"
+participant CameraActivity
+end box
+
+
+[->CameraActivity:create
+CameraActivity->CameraActivity:goToGallery
+activate CameraActivity
+CameraActivity->GalleryActivity:create
+note right: com.android.camera.action.REVIEW
+deactivate CameraActivity
+
+box "Gallery"
+participant GalleryActivity
+participant PhotoPage
+participant PhotoPageBottomControls
+end box
+
+box "OCR"
+participant CameraShotActivity
+end box
+
+GalleryActivity->GalleryActivity:onCreate
+GalleryActivity->GalleryActivity:initializeByIntent
+GalleryActivity->GalleryActivity:startViewAction
+GalleryActivity->PhotoPage:onCreate
+
+activate PhotoPage
+create PhotoPageBottomControls
+PhotoPage -> PhotoPageBottomControls: create
+PhotoPage -> PhotoPageBottomControls: setup
+PhotoPage -> PhotoPageBottomControls: setVideoSubtitleRecognitionInProgress
+deactivate PhotoPage
+PhotoPageBottomControls -> PhotoPageBottomControls: onClick
+activate PhotoPageBottomControls
+PhotoPageBottomControls -> PhotoPage: onBottomControlClicked
+deactivate PhotoPageBottomControls
+PhotoPage -> CameraShotActivity:create
+note left:com.iflytek.ocr.CameraShotActivity
+
+
+
+@enduml

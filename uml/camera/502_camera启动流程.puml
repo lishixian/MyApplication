@@ -1,0 +1,57 @@
+@startuml
+title 502_camera启动流程
+
+
+
+CameraActivity -> CameraActivity:onCreateTasks
+activate CameraActivity
+CameraActivity -> CameraActivity:setModuleFromModeIndex
+activate CameraActivity
+create PhotoModule
+CameraActivity ->PhotoModule:create
+deactivate CameraActivity
+CameraActivity -> CameraActivity:postInit
+activate CameraActivity
+create CameraAppUI
+CameraActivity ->CameraAppUI:new
+CameraActivity->CameraAppUI:prepareModuleUI
+CameraActivity->PhotoModule:init
+deactivate CameraActivity
+deactivate CameraActivity
+create PhotoUI
+PhotoModule->PhotoUI:createUI
+PhotoUI->PhotoUI:initUI
+
+...
+PhotoModule->PhotoModule:onShutterButtonClick
+PhotoModule->PhotoModule:focusAndCapture
+PhotoModule->FocusOverlayManager:focusAndCapture
+FocusOverlayManager->FocusOverlayManager:capture
+FocusOverlayManager->PhotoModule:capture
+PhotoModule->AndroidCamera2ProxyImpl:takePicture
+
+box "FW"
+participant AndroidCamera2ProxyImpl
+participant SprdAndroidCamera2AgentImpl
+participant CameraCaptureSessionImpl
+end box
+
+AndroidCamera2ProxyImpl->SprdAndroidCamera2AgentImpl:handleMessage
+SprdAndroidCamera2AgentImpl->CameraCaptureSessionImpl:captureBurst
+...
+PhotoModule<<--AndroidCamera2ProxyImpl:onPictureTaken
+PhotoModule->PhotoModule:saveFinalPhoto
+PhotoModule->PhotoModule:onMediaSaved
+
+
+
+
+
+
+
+
+
+
+
+
+@enduml

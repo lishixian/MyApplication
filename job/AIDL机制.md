@@ -42,3 +42,67 @@ onTransact(int code, android.os.Parcel data, android.os.Parcel reply, int flags)
 注意：
 - 客户端的发出的同步请求，所以不能在UI线程发起远程请求
 - 服务端Binder运行在Binder线程池，即onTransact方法执行在Binder方法池中，在此方法中最终执行了我们接口中定义方法的具体实现。所以在AIDLService中的IBookManager.Stub对象实现接口方法时，不管操作是否耗时都要采用同步的方式。
+
+Serializable和Parcelable
+Parcelable 和 Serializable 都可以实现序列化并且都可用于 Intent 间的数据传递，那我们还是得总结下它们的使用场景：
+
+Serializable 是 Java 的序列化接口，使用简单但开销很大，序列化和反序列化都需要大量的 I/O 操作；而 Parcelable 是 Android 中的序列化方式，因此更适合于 Android 平台上，它的缺点是使用起来稍微麻烦点，但它的效率很高，这是 Android 推荐的序列化方式，因此我们要首选 Parcelable。但 Serializable 也不是在 Android 上无用武之地，下面两种情况就发日常适合 Serializable：
+1. 需要将对象序列化到设备；
+2. 对象序列化后需要网络传输。
+
+Serializable 使用 I/O 读写存储在硬盘上，而 Parcelable 是直接 在内存中读写;
+Serializable 会使用反射，序列化和反序列化过程需要大量 I/O 操作; Parcelable 自已实现封送和解封（marshalled &unmarshalled）操作不需要用反射，
+数据也存放在 Native 内存中，效率要快很多。
+
+Intent 中的 Bundle 是使用 Binder 机制进行数据传送的。能使用的 Binder 的缓冲区是有大小限制的（有些手机是 2 M），而一个进程默认有 16 个 Binder 线程，
+所以一个线程能占用的缓冲区就更小了（ 有人以前做过测试，大约一个线程可以占用 128 KB）
+
+作者：nanchen2251
+链接：https://www.jianshu.com/p/1b362e374354
+来源：简书
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+public class TestSerializable implements Serializable {
+String msg;
+
+    List<ItemBean> datas;
+    
+    public static class ItemBean implements Serializable{
+        String name;
+    }
+}
+
+public class TestParcelable implements Parcelable {
+String msg;
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(this.msg);
+    }
+
+    TestParcelable(String msg) {
+        this.msg = msg;
+    }
+
+    private TestParcelable(Parcel in) {
+        this.msg = in.readString();
+    }
+
+    public static final Creator<TestParcelable> CREATOR = new Creator<TestParcelable>() {
+        @Override
+        public TestParcelable createFromParcel(Parcel source) {
+            return new TestParcelable(source);
+        }
+
+        @Override
+        public TestParcelable[] newArray(int size) {
+            return new TestParcelable[size];
+        }
+    };
+}
+
+

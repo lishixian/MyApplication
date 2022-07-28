@@ -1,0 +1,107 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+title:开启文件传输流程
+
+participant FileSyncStateMachine
+participant FileSyncManager
+participant OtaManager
+participant DeviceController
+
+autonumber
+
+== 文件申请状态切换==
+FileSyncStateMachine -> FileSyncStateMachine: SyncState.enter
+note right: FileSyncStateMachine为FileSyncManager的私有静态内部类
+FileSyncStateMachine -> FileSyncManager: requestTransferInternal
+note right
+msg001(DATA_CHANNEL_STATUS)
+msg002(MSG_REQUEST_TRANSFER,session, 0, msg001)
+end note
+
+FileSyncManager -> DeviceController: IdleState.processMessage
+note right
+case MSG_REQUEST_TRANSFER:  //对应msg002.what
+fileTransferRequest(msg002.arg1, (Message) msg002.obj)
+msg003(fileTransferRequest.getStateMessage(), fileTransferRequest)
+//fileTransferRequest.getStateMessage() = MSG_START_DEVICE_SYNC
+end note
+
+DeviceController -> DeviceController: IdleState.processMessage
+note left: case MSG_START_DEVICE_SYNC: // 对应msg003.what
+DeviceController -> DeviceController: IdleState.transitionTo(syncingState)
+DeviceController -> DeviceController: SyncingState.processMessage
+note left: case MSG_START_DEVICE_SYNC: // 对应msg003.what
+== 切换到文件同步状态后,回调==
+DeviceController -> DeviceController: fileTransferRequest.reply(TRANSFER_READY)
+note left: 调用mag001反馈回去
+DeviceController->FileSyncManager: handleMessage
+note left: case DATA_CHANNEL_STATUS: // 对应msg001.what
+FileSyncManager->FileSyncManager: onReady
+FileSyncManager->FileSyncStateMachine: sendMessage(MSG_TRANSFER_READY)
+FileSyncStateMachine->FileSyncStateMachine:SyncState.processMessage
+note right:case MSG_TRANSFER_READY:
+FileSyncStateMachine->FileSyncStateMachine:SyncState.transitionTo(syncingState)
+FileSyncStateMachine->FileSyncStateMachine:SyncingState.enter
+FileSyncStateMachine->FileSyncStateMachine:sendMessage(MSG_START_SYNC_FILE)
+FileSyncStateMachine->FileSyncStateMachine:SyncingState.processMessage
+note right:case MSG_START_SYNC_FILE:
+== 文件管理器切到正在同步状态, 并发起同步文件流程==
+FileSyncStateMachine->FileSyncManager:syncFile()
+FileSyncManager->FileSyncManager:getNextSyncRequest
+group  发送查询文件大小
+FileSyncManager->FileSyncManager:requestFileSync
+note right: cmd:24  key:01 文件名:nB 类型:1B
+...
+FileSyncManager->FileSyncManager:onDataSend
+note right: cmd:24  key:81 文件大小: nB 类型:0或1
+FileSyncManager->FileSyncManager:handleFileSize
+end
+
+group   请求包数据
+FileSyncManager->FileSyncManager:requestFileFragment
+note right: cmd:24  key:02 size:4B offset:4B 类型:1B
+...
+FileSyncManager->FileSyncManager:onDataReceive
+note right: cmd:24  key:84 数据:nB num:1B (因为连续收8包,该方法连续执行8次)
+end
+
+group   情况1: 如果8包收齐之后, 请求下一组
+FileSyncManager->FileSyncManager:handleFileFragment
+FileSyncManager->FileSyncStateMachine:sendMessage(MSG_SYNC_SAVE_FILE)
+FileSyncStateMachine->FileSyncManager:saveFragmentAndContinue
+FileSyncManager->FileSyncStateMachine:sendMessage(MSG_SYNC_CONTINUE )
+FileSyncStateMachine->FileSyncManager:continueSync
+FileSyncManager->FileSyncManager:requestFileFragment
+note right: cmd:24  key:02 size:4B offset:4B 类型:1B
+end
+...
+group 情况2: 如果2秒内没有收齐8包, 会发超时补传逻辑
+FileSyncManager->FileSyncManager:onDataReceive
+note right: cmd:24  key:84 数据:nB num:1B (因为连续收8包,该方法连续执行8次)
+FileSyncManager->FileSyncManager:handleFileFragment
+FileSyncManager->FileSyncStateMachine:MSG_SYNC_TIMEOUT
+FileSyncStateMachine->FileSyncManager:requestReTrans
+note right: cmd:24  key:05 bitmap:2B size:4B offset:4B
+end
+...
+FileSyncManager->FileSyncManager:onDataReceive
+note right: cmd:24  key:84 数据:nB num:1B (因为连续收8包,该方法连续执行8次)
+FileSyncManager->FileSyncManager:handleFileFragment
+FileSyncManager->FileSyncStateMachine:MSG_SYNC_SAVE_FILE
+FileSyncStateMachine->FileSyncManager:saveFragmentAndContinue
+note right: 如果整个文件都收齐了,保存文件,请求md5(0x06)
+...
+FileSyncManager->FileSyncManager:onDataSend
+FileSyncManager->FileSyncManager:handleFileMD5
+note right:  收到md5并做校验
+alt md5校验成功, 如果需要删除远端文件,会发命令去删除
+FileSyncManager->FileSyncManager:deleteRemoteFile
+note right: cmd:23  key:05 数据:nB num:1B (因为连续收8包,该方法连续执行8次)
+else md5校验成功, 否则同步下一个文件
+FileSyncManager->FileSyncStateMachine:MSG_START_SYNC_FILE
+else 如果md5校验失败, 重新开始
+FileSyncManager->FileSyncManager:requestFileSync
+end
+
+@enduml

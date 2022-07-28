@@ -1,0 +1,15 @@
+@startuml
+title 502_camera_pause流程
+
+
+CameraActivity->CameraActivity:onPauseTasks
+CameraActivity->VideoModule:pause
+VideoModule->VideoModule:onStopVideoRecording
+VideoModule->AudioRecordThread:stopRecord
+VideoModule->AudioRecordThread:destroyThread
+VideoModule->VideoModule:stopVideoRecording
+VideoModule->VideoModule:saveVideo
+VideoModule->VideoModule:onMediaSaved
+
+
+@enduml

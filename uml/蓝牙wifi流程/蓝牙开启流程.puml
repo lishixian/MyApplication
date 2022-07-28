@@ -1,0 +1,63 @@
+@startuml
+title 蓝牙开启时序图
+hide footbox
+
+
+box "Settings/bluetooth/"
+participant BluetoothEnabler
+end box
+BluetoothEnabler -> BluetoothEnabler: onSwitchToggled
+note right: 蓝牙开关
+BluetoothEnabler -> BluetoothAdapter: enable
+
+
+box "FW"
+participant BluetoothAdapter
+participant BluetoothManagerService
+end box
+BluetoothAdapter->BluetoothManagerService: enable
+BluetoothManagerService->BluetoothManagerService:sendEnableMsg
+note right:MESSAGE_ENABLE
+BluetoothManagerService->BluetoothManagerService:handleEnable
+BluetoothManagerService->AdapterService:enable
+
+
+box "Packages/apps/Bluetooth"
+participant AdapterService
+participant AdapterState
+participant GattService
+participant ProfileService
+end box
+AdapterService -> AdapterState: sendMessage
+note right:BLE_TURN_ON
+AdapterState -> AdapterService:BleOnProcessStart
+AdapterService -> AdapterService: setGattProfileServiceState
+AdapterService -> GattService: onStartCommand
+GattService -> ProfileService:doStart
+ProfileService -> ProfileService:notifyProfileServiceStateChanged
+ProfileService->AdapterService: onProfileServiceStateChanged
+note right:MESSAGE_PROFILE_SERVICE_STATE_CHANGED
+AdapterService->AdapterService:processProfileServiceStateChanged
+AdapterService->AdapterState:sendMessage
+note right:BLE_STARTED
+AdapterState->AdapterService:enableNative
+
+box "Packages/apps/Bluetooth/jni/"
+participant com_android_bluetooth_btservice_AdapterService.cpp
+end box
+AdapterService-> com_android_bluetooth_btservice_AdapterService.cpp:enableNative
+com_android_bluetooth_btservice_AdapterService.cpp->bluetooth.cc: enable
+
+
+box "/system/bt/btif/src/"
+participant bluetooth.cc
+participant stack_manager.c
+end box
+bluetooth.cc->stack_manager.c:start_up_stack_async
+stack_manager.c->stack_manager.c:event_start_up_stack
+stack_manager.c->stack_manager.c:event_signal_stack_up
+stack_manager.c->bluetooth.h:adapter_state_changed_cb
+note left:adapter_state_changed_callback
+
+
+@enduml

@@ -31,7 +31,7 @@ wm.addView(view, layoutParams);
 
 使用服务的具体执行过程
 client通过获得一个server的代理接口，对server进行调用。
-代理接口中定义的方法与server中定义的方法时一一对应的。
+代理接口中定义的方法与server中定义的方法是一一对应的。
 client调用某个代理接口中的方法时，代理接口的方法会将client传递的参数打包成Parcel对象。
 代理接口将Parcel发送给内核中的binder driver。
 server会读取binder driver中的请求数据，如果是发送给自己的，解包Parcel对象，处理并将结果返回。

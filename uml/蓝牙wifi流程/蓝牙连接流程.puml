@@ -1,0 +1,76 @@
+@startuml
+title 蓝牙连接时序图
+hide footbox
+
+box "Settings/bluetooth/"
+participant BluetoothPairingDetail
+participant DeviceListPreferenceFragment
+participant BluetoothDevicePreference
+end box
+
+BluetoothPairingDetail->DeviceListPreferenceFragment:onDevicePreferenceClick
+DeviceListPreferenceFragment->BluetoothDevicePreference:onClicked
+note left
+1. 已连接,断开连接
+2. 已配对,直接连接
+3. 没连接,先配对
+end note
+BluetoothDevicePreference->CachedBluetoothDevice:connect
+
+
+box "frameworks\base\packages\SettingsLib"
+participant CachedBluetoothDevice
+participant HeadsetProfile
+end box
+CachedBluetoothDevice->CachedBluetoothDevice:connectWithoutResettingTimer
+CachedBluetoothDevice->HeadsetProfile:connect
+HeadsetProfile->BluetoothHeadset:connect
+note left
+A2dp :  Advanced Audio Distribution Profile
+    蓝牙 音频传输模型协定
+GATT:  Generic Attribute Profile
+    通用属性配置文件
+HDP ： Bluetooth Health Device Profile
+    蓝牙关于医疗方面的应用 
+HFP : Hands-free Profile
+    和电话相关，蓝牙接听、挂断电话 
+HID :  Human Interface Device  
+MAP :  Message Access Profile
+OPP : Object Push Profile
+PAN : Personal Area Network Profile
+PBAP : Phonebook Access Profile
+    电话号码簿访问协议
+end note
+
+box "frameworks\base\core"
+participant BluetoothHeadset
+end box
+BluetoothHeadset->HeadsetService:connect
+
+
+box "packages/apps/Bluetooth/"
+participant HeadsetService
+participant HeadsetStateMachine
+participant HeadsetNativeInterface
+end box
+HeadsetService->HeadsetStateMachine:CONNECT
+HeadsetStateMachine->HeadsetNativeInterface:connectHfp
+HeadsetNativeInterface->com_android_bluetooth_hfp:connectHfpNative
+
+box "packages/apps/Bluetooth/jni"
+participant com_android_bluetooth_hfp
+end box
+
+...
+com_android_bluetooth_hfp->HeadsetNativeInterface:ConnectionStateCallback
+HeadsetNativeInterface->HeadsetService:messageFromNative
+HeadsetService->HeadsetStateMachine:sendMessage
+note left: STACK_EVENT \n EVENT_TYPE_CONNECTION_STATE_CHANGED
+
+HeadsetStateMachine->HeadsetStateMachine:processConnectionEvent
+note left: CONNECTION_STATE_CONNECTED
+
+
+
+
+@enduml

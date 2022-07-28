@@ -1,0 +1,22 @@
+@startuml
+title 901_camera_shutterButton_启动流程
+
+CameraAppUI->ShutterButtonManager:registerDone
+create shutterView
+ShutterButtonManager->shutterView:inflate
+ShutterButtonManager->shutterView:setOnShutterButtonListener
+create ShutterButton
+shutterView->ShutterButton:findViewById(R.id.shutter_button)
+shutterView->ShutterButton:setOnShutterButtonListener
+...
+...
+ShutterButton->ShutterButton:performClick
+ShutterButton->ShutterButtonManager:onShutterButtonClicked
+ShutterButtonManager->PhotoMode:onShutterButtonClick
+PhotoMode->PhotoMode:handleMessage
+note right:MSG_MODE_ON_SHUTTER_BUTTON_CLICK
+PhotoMode->PhotoMode:doShutterButtonClick
+
+
+
+@enduml

@@ -376,5 +376,78 @@ override（重写）
 比较两者语法区别的条理是：先从本质区别开始，然后是继承性，构造方法，抽象方法，成员变量和属性以及常量，最后是静态成员变量。
 
 
+##final、finally、finalize的区别
+三者的区别
+1.性质不同
+
+（1）final为关键字;
+
+（2）finalize()为方法;
+
+（3）finally为为区块标志,用于try语句中;
+
+2. 作用
+
+（1）final为用于标识常量的关键字,final标识的关键字存储在常量池中(在这里final常量的具体用法将在下面进行介绍);
+
+（2）finalize()方法在Object中进行了定义,用于在对象“消失”时,由JVM进行调用用于对对象 进行垃圾回收，类似于C++中的析构函数;用户自定义时,用于释放对象占用的资源(比如进行 I/0操作);
+
+（3）finally{}用于标识代码块,与try{ }进行配合,不论try中的代码执行完或没有执行完(这里指有异常),该代码块之中的程序必定会进行 .
+
+一.final的用法
+被final修饰的类不可以被继承
+被final修饰的方法不可以被重写
+被final修饰的变量不可以被改变,如果修饰引用,那么表示引用不可变,引用指向的内容可变.
+被final修饰的方法,JVM会尝试将其内联,以提高运行效率
+被final修饰的常量,在编译阶段会存入常量池中
+除此之外,编译器对final域要遵守的两个重排序规则更好:
+
+        在构造函数内对一个final域的写入,与随后把这个被构造对象的引用赋值给一个引用变量,这两个操作之间不能重排序,初次读一个包含final域的对象的引用,与随后初次读这个final域,这两个操作之间不能重排序
+
+二.finally的用法
+finally是在异常处理中的使用的
+
+不管 try 语句块正常结束还是异常结束,finally 语句块是保证要执行的.
+
+如果 try 语句块正常结束,那么在 try 语句块中的语句都执行完之后,再执行 finally 语句块.
+
+不管有没有出现异常,finally块中的代码都会执行;
+当try和catch中有return时,finally仍然会执行;
+finally是在return后面的表达式运算后执行的(此时并没有返回运算后的值,而是先把要返回的值保存起来,无论finally中的代码怎么样,返回的值都不会改变,仍然是之前保存的值),所以函数返回值是在finally执行前确定好的;
+finally中最好不要包含return,否则程序会提前退出,返回值不是try或catch中保存的返回值.
+三.finalize的用法
+finalize() 是Java中Object的一个protected方法.返回值为空,当该对象被垃圾回收器回收时,会调用该方法.
+
+关于finalize()函数
+
+finalize不等价于c++中的析构函数;
+对象可能不被垃圾机回收器回收;
+垃圾回收不等于析构;
+垃圾回收只与内存有关;
+垃圾回收和finalize()都是靠不住的,只要JVM还没有快到耗尽内存的地步,它是不会浪费时间进行垃圾回收的;
+程序强制终结后,那些失去引用的对象将会被垃圾回收.(System.gc())
+finalize()的用途:比如当一个对象代表了打开了一个文件,在对象被回收前,程序应该要关闭该文件,可以通过finalize函数来发现未关闭文件的对象,并对其进行处理.
+
+public class FileOperator {
+
+    private boolean closed = false;
+ 
+    void close(){
+        this.closed = true;
+    }
+ 
+    @Override
+    protected void finalize(){//当垃圾回收器企图回收本对象时，会调用该方法,该方法是重写父类的方法的
+        if(!closed){//如果该书没有被签入，
+            System.out.println("Error: A File was not closed . Name:" + this);
+            this.closed = true;
+        }
+    }
+ 
+    public static void main(String[] args) {
+        FileOperator fileOperator = new FileOperator();//有引用的对象，不会被虚拟机回收
+        new FileOperator();//匿名对象，会被虚拟机回收
+        System.gc();//强制进行终结动作
+    }
 
 

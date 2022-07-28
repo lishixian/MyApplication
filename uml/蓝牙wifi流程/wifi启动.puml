@@ -1,0 +1,60 @@
+@startuml
+title wifi启动
+hide footbox
+
+
+
+box "packages/apps/settings/"
+participant WifiSettings
+participant WifiEnabler
+end box
+
+WifiSettings-> WifiSettings: onStart
+create WifiEnabler
+WifiSettings-> WifiEnabler:createWifiEnabler
+WifiEnabler->WifiEnabler:onSwitchToggled
+WifiEnabler->WifiManager:setWifiEnabled
+
+box "frameworks/base/wifi"
+participant WifiManager
+end box
+WifiManager->WifiSeviceImpl:setWifiEnabled
+
+box "frameworks/opt/net"
+participant WifiSeviceImpl
+participant WifiController
+participant WifiStateMachinePrime
+participant ModeStateMachine
+participant ClientModeManager
+participant WifiNative
+participant WificondControl
+participant WifiMonitor
+end box
+note right
+enforceChangePermission 判断调用的进程是否有权限。
+想要开关wifi需要CHANGE_WIFI_STATE 权限。
+isAirplaneModeOn 判断飞行模式。
+handleWifiToggled 保存wifi 操作的状态。
+向WifiController发送CMD_WIFI_TOGGLED消息。
+end note
+WifiSeviceImpl->WifiController:CMD_WIFI_TOGGLED
+WifiController->WifiStateMachinePrime:enterClientMode
+WifiStateMachinePrime->WifiStateMachinePrime:changeMode
+WifiStateMachinePrime->ModeStateMachine:CMD_START_CLIENT_MODE
+ModeStateMachine->ClientModeManager:start
+ClientModeManager->ClientModeManager:CMD_START_CLIENT_MODE
+note left:ClientModeStateMachine.IdleState
+ClientModeManager->WifiNative:setupInterfaceForClientMode
+WifiNative->WifiNative:startHal
+note left:启动Hal
+WifiNative->WifiNative:startSupplicant
+note left:启动supplicant
+WifiNative->WificondControl:setupInterfaceForClientMode
+note left:加载驱动
+WifiNative->WifiMonitor:startMonitoring
+note left:启动WifiMonitor
+
+
+
+
+@enduml

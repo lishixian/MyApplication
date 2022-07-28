@@ -161,12 +161,12 @@ public class suanfa {
      */
     public static class myQueue {
 
-        private Stack<Integer> stack1;
-        private Stack<Integer> stack2;
+        private final Stack<Integer> stack1;
+        private final Stack<Integer> stack2;
 
         public myQueue() {
-            stack1 = new Stack<Integer>();
-            stack2 = new Stack<Integer>();
+            stack1 = new Stack<>();
+            stack2 = new Stack<>();
         }
 
         /**

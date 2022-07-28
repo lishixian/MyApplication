@@ -1,0 +1,169 @@
+@startuml
+
+title 建立蓝牙共享网络
+
+
+box "client"
+participant DevicesManagerMachine
+participant WifiManagerMachine
+participant BluetoothPanConfig
+participant C_WifiPortalControl
+participant C_BluetoothGattConfig
+end box
+
+box "server"
+participant S_BluetoothGattConfig
+participant ConfigStateMachine
+participant WifiConfig
+participant WifiBroadcastReceiver
+participant WifiList
+participant WifiPortalControl
+participant BluePanTetherConfig
+participant BluetoothBroadcastReceiver
+end box
+
+
+DevicesManagerMachine -> WifiManagerMachine: wifiConnect
+WifiManagerMachine -> C_BluetoothGattConfig: CMD_CONNECT_WIFI
+C_BluetoothGattConfig -> S_BluetoothGattConfig: UUID_CONFIG_ACCESSPOINT_8603:point
+
+S_BluetoothGattConfig -> ConfigStateMachine: CMD_CONNECT_WIFI
+note left: GattConnectedState --> WifiConfigState
+ConfigStateMachine->ConfigStateMachine: CMD_CONNECT_WIFI
+ConfigStateMachine->WifiConfig:connectWifi
+WifiConfig->WifiManager: addNetwork
+WifiManager-->>WifiConfig:netid
+WifiConfig->WifiManager: enableNetwork
+note left:建立网络连接
+
+
+...
+WifiBroadcastReceiver <<--]: NETWORK_STATE_CHANGED_ACTION
+note left:先断开现有wifi连接
+WifiBroadcastReceiver->WifiBroadcastReceiver: handleWifiNetwork
+WifiBroadcastReceiver->WifiBroadcastReceiver: updateConnectionState
+WifiBroadcastReceiver-->>ConfigStateMachine: MSG_WIFI_DISCONNECTED
+note left:  WifiConfigState -> WifDisconnectedState
+activate ConfigStateMachine
+ConfigStateMachine->ConfigStateMachine:updateConnectionState
+ConfigStateMachine-> S_BluetoothGattConfig:setWifiState
+deactivate ConfigStateMachine
+S_BluetoothGattConfig -->> C_BluetoothGattConfig: UUID_WIFI_STATE_8621:DISCONNECTED
+C_BluetoothGattConfig-->>WifiManagerMachine:MSG_WIFI_DISCONNECTED
+note left: WifiConfigState->WifiDisConnectedState
+
+
+...
+WifiBroadcastReceiver <<--]: SCAN_RESULTS_AVAILABLE_ACTION
+note left:scan后，返回新的wifi列表
+WifiBroadcastReceiver->WifiBroadcastReceiver: handleWifiResult
+WifiBroadcastReceiver-->>ConfigStateMachine:MSG_WIFI_SCAN_RESULTS
+note left:  WifDisconnectedState.processMessage
+activate ConfigStateMachine
+ConfigStateMachine->WifiList: updateAccessPoints
+ConfigStateMachine->S_BluetoothGattConfig: sendwifiList
+deactivate ConfigStateMachine
+activate S_BluetoothGattConfig
+S_BluetoothGattConfig -->> C_BluetoothGattConfig: UUID_WIFI_ACCESSPOINT_8623:[-1]
+S_BluetoothGattConfig -->> C_BluetoothGattConfig: UUID_WIFI_ACCESSPOINT_8623:point
+S_BluetoothGattConfig -->> C_BluetoothGattConfig: UUID_WIFI_ACCESSPOINT_8623:[-3]
+deactivate S_BluetoothGattConfig
+C_BluetoothGattConfig-->>WifiManagerMachine:MSG_WIFI_LIST_CHANGE
+
+
+
+...
+WifiBroadcastReceiver <<--]: NETWORK_STATE_CHANGED_ACTION
+WifiBroadcastReceiver->WifiBroadcastReceiver: handleWifiNetwork
+WifiBroadcastReceiver->WifiBroadcastReceiver: updateConnectionState
+note left
+更新wifi连接信息,按顺序,依次走如下几个状态:
+  1. SCANNING                    :  MSG_WIFI_SCANNING
+  2. CONNECTING              :  MSG_WIFI_CONNECTING
+  3. AUTHENTICATING      : MSG_WIFI_AUTH
+  4. OBTAINING_IPADDR : MSG_WIFI_GETIP　
+  5. CONNECTED                :  MSG_WIFI_CONNECTED
+end note
+WifiBroadcastReceiver-->>ConfigStateMachine:
+
+activate ConfigStateMachine
+ConfigStateMachine->ConfigStateMachine:updateConnectionState
+ConfigStateMachine->S_BluetoothGattConfig:setConnectState
+activate S_BluetoothGattConfig
+S_BluetoothGattConfig -->> C_BluetoothGattConfig: UUID_WIFI_ACCESSPOINT_8623:point
+S_BluetoothGattConfig -->> C_BluetoothGattConfig: UUID_WIFI_ACCESSPOINT_8623:[-2][networkId]
+deactivate S_BluetoothGattConfig
+ConfigStateMachine-> S_BluetoothGattConfig:setWifiState
+note right
+更新wifi连接状态:
+    WifDisconnectedState
+    WifiConnectedState
+end note
+S_BluetoothGattConfig -->> C_BluetoothGattConfig: UUID_WIFI_STATE_8621:
+C_BluetoothGattConfig-->>WifiManagerMachine:WIFI_STATE
+
+ConfigStateMachine -> ConfigStateMachine:MSG_CONNECTIVITY_SUCCEED
+note right: WifiConnectedState
+deactivate ConfigStateMachine
+ConfigStateMachine->WifiPortalControl: checkisValidatedOnce
+WifiPortalControl->WifiPortalControl:handleMessage
+note left: case CMD_CHECK_PORTAL_ONCE:
+activate WifiPortalControl
+WifiPortalControl->WifiPortalControl:isValidated
+WifiPortalControl->ConfigStateMachine:MSG_NETWORK_NEED_PORTAL
+note left:WifiConnectedState
+deactivate WifiPortalControl
+
+activate ConfigStateMachine
+ConfigStateMachine->S_BluetoothGattConfig:setWifiState:PORTAL
+S_BluetoothGattConfig -->> C_BluetoothGattConfig: UUID_WIFI_STATE_8621:PORTAL
+C_BluetoothGattConfig-->>WifiManagerMachine:WIFI_STATE
+note left:MSG_WIFI_NEED_POETAL
+ConfigStateMachine->BluePanTetherConfig:startBluetoothTethering
+deactivate ConfigStateMachine
+...
+WifiManagerMachine->C_BluetoothGattConfig:setPeerFlag
+note left: WifiConfigState->PortalState
+C_BluetoothGattConfig->S_BluetoothGattConfig: UUID_BLUE_FLAG_8601:[bluname]
+S_BluetoothGattConfig->ConfigStateMachine:CMD_SET_PEER_INFO
+...
+BluePanTetherConfig-->>ConfigStateMachine:MSG_TETHER_ON
+note left:WifiConnectedState->BlueTetherState
+ConfigStateMachine->S_BluetoothGattConfig:setServiceFlagState
+S_BluetoothGattConfig -->> C_BluetoothGattConfig: UUID_SERVICE_FLAG_8622:[server_address]
+...
+C_BluetoothGattConfig-->>WifiManagerMachine:MSG_GATT_SERVICE_BOND_MAC
+note left:PortalState
+WifiManagerMachine->BluetoothPanConfig:connect
+
+
+...
+BluetoothPanConfig->BluetoothPanConfig:onReceive
+BluetoothPanConfig -->> WifiManagerMachine: MSG_PAN_CONNECTED
+note left:PortalState->PanConnectedState
+WifiManagerMachine->C_WifiPortalControl:checkisValidatedOnce
+C_WifiPortalControl->C_WifiPortalControl:CMD_CHECK_PORTAL_ONCE
+activate C_WifiPortalControl
+C_WifiPortalControl->C_WifiPortalControl:isBlueNetworkConnected
+note left: 检查蓝牙网络是否连接,没有就每2s重新检查一次
+C_WifiPortalControl->C_WifiPortalControl:isValidated
+note left: 检测当前网络是否需要二次验证
+deactivate C_WifiPortalControl
+C_WifiPortalControl-->>WifiManagerMachine: MSG_STATE_POTTAL_NEED
+note left: 如果需要二次验证,就启动webview
+WifiManagerMachine->C_WifiPortalControl:auth
+
+...
+BluetoothBroadcastReceiver<<--]:
+note left:BluetoothPan.ACTION_CONNECTION_STATE_CHANGED
+BluetoothBroadcastReceiver->ConfigStateMachine:MSG_PAN_CONNECTED
+ConfigStateMachine->ConfigStateMachine:setBluetoothDevice
+note left:BlueTetherState->PanConnectedtState
+ConfigStateMachine->WifiPortalControl:checkisValidated
+WifiPortalControl->WifiPortalControl:handleMessage
+note left: case CMD_CHECK_PORTAL
+WifiPortalControl->WifiPortalControl:isValidated
+note left: 此处每一秒循环一次,直到建立连接
+WifiPortalControl->ConfigStateMachine:MSG_NETWORK_NEED_PORTAL
+
+@enduml

@@ -8,9 +8,46 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by CHG on 2017-02-23 20:20.
  */
 public class PrintABC {
+
+    public static void main(String[] args) {
+        /*Object object = new Object();
+        ArrayList<Integer> list = new ArrayList<Integer>();
+
+        Produce p = new Produce(object, list);
+        Consumer c = new Consumer(object, list);
+
+        ProduceThread[] pt = new ProduceThread[2];
+        ConsumeThread[] ct = new ConsumeThread[2];
+
+        for(int i=0;i<2;i++){
+            pt[i] = new ProduceThread(p);
+            pt[i].setName("生产者 "+(i+1));
+            ct[i] = new ConsumeThread(c);
+            ct[i].setName("消费者"+(i+1));
+            pt[i].start();
+            ct[i].start();
+        }*/
+
+        MyService service = new MyService();
+
+        ProduceThread2[] pt = new ProduceThread2[2];
+        ConsumeThread2[] ct = new ConsumeThread2[2];
+
+        for(int i=0;i<1;i++){
+            pt[i] = new ProduceThread2(service);
+            pt[i].setName("Condition Produce "+(i+1));
+            ct[i] = new ConsumeThread2(service);
+            ct[i].setName("Condition Consume"+(i+1));
+            pt[i].start();
+            ct[i].start();
+        }
+    }
+
+
+
     static class Produce {
 
-        public Object object;
+        public final Object object;
         public ArrayList<Integer> list;//用list存放生产之后的数据，最大容量为1
 
         public Produce(Object object,ArrayList<Integer> list ){
@@ -24,12 +61,12 @@ public class PrintABC {
                 /*只有list为空时才会去进行生产操作*/
                 try {
                     while(!list.isEmpty()){
-                        System.out.println("生产者"+Thread.currentThread().getName()+" waiting");
+                        System.out.println("produce"+Thread.currentThread().getName()+" waiting");
                         object.wait();
                     }
                     int value = 9999;
                     list.add(value);
-                    System.out.println("生产者"+Thread.currentThread().getName()+" Runnable");
+                    System.out.println("produce"+Thread.currentThread().getName()+" Runnable");
                     object.notifyAll();//然后去唤醒因object调用wait方法处于阻塞状态的线程
                 }catch (InterruptedException e) {
                     e.printStackTrace();
@@ -54,11 +91,11 @@ public class PrintABC {
                 try {
                     /*只有list不为空时才会去进行消费操作*/
                     while(list.isEmpty()){
-                        System.out.println("消费者"+Thread.currentThread().getName()+" waiting");
+                        System.out.println("Consumer"+Thread.currentThread().getName()+" waiting");
                         object.wait();
                     }
                     list.clear();
-                    System.out.println("消费者"+Thread.currentThread().getName()+" Runnable");
+                    System.out.println("Consumer"+Thread.currentThread().getName()+" Runnable");
                     object.notifyAll();//然后去唤醒因object调用wait方法处于阻塞状态的线程
 
                 }catch (InterruptedException e) {
@@ -95,39 +132,7 @@ public class PrintABC {
         }
     }
 
-        public static void main(String[] args) {
-        /*Object object = new Object();
-        ArrayList<Integer> list = new ArrayList<Integer>();
 
-        Produce p = new Produce(object, list);
-        Consumer c = new Consumer(object, list);
-
-        ProduceThread[] pt = new ProduceThread[2];
-        ConsumeThread[] ct = new ConsumeThread[2];
-
-        for(int i=0;i<2;i++){
-            pt[i] = new ProduceThread(p);
-            pt[i].setName("生产者 "+(i+1));
-            ct[i] = new ConsumeThread(c);
-            ct[i].setName("消费者"+(i+1));
-            pt[i].start();
-            ct[i].start();
-        }*/
-
-            MyService service = new MyService();
-
-            ProduceThread2[] pt = new ProduceThread2[2];
-            ConsumeThread2[] ct = new ConsumeThread2[2];
-
-            for(int i=0;i<1;i++){
-                pt[i] = new ProduceThread2(service);
-                pt[i].setName("Condition 生产者 "+(i+1));
-                ct[i] = new ConsumeThread2(service);
-                ct[i].setName("Condition 消费者"+(i+1));
-                pt[i].start();
-                ct[i].start();
-            }
-        }
 
     static class ConsumeThread2 extends Thread {
         private MyService c;
@@ -137,7 +142,7 @@ public class PrintABC {
         @Override
         public void run() {
             while (true) {
-                c.consmer();
+                c.consumer();
             }
         }
     }
@@ -157,8 +162,8 @@ public class PrintABC {
 
     static class MyService {
 
-        private ReentrantLock lock = new ReentrantLock();
-        private Condition condition = lock.newCondition();
+        private final ReentrantLock lock = new ReentrantLock();
+        private final Condition condition = lock.newCondition();
         private boolean hasValue = false;
 
 
@@ -166,12 +171,12 @@ public class PrintABC {
             lock.lock();
             try {
                 /*只有list为空时才会去进行生产操作*/
-                if(hasValue == true){
-                    System.out.println("生产者"+Thread.currentThread().getName()+" waiting");
+                if(hasValue){
+                    System.out.println("produce"+Thread.currentThread().getName()+" waiting");
                     condition.await();
                 }
                 hasValue = true;
-                System.out.println("生产者"+Thread.currentThread().getName()+" Runnable");
+                System.out.println("produce"+Thread.currentThread().getName()+" Runnable");
                 condition.signalAll();//然后去唤醒因object调用wait方法处于阻塞状态的线程
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -181,16 +186,16 @@ public class PrintABC {
 
         }
 
-        public void consmer() {
+        public void consumer() {
             lock.lock();
             try {
                 /*只有list为空时才会去进行生产操作*/
-                if(hasValue == false){
-                    System.out.println("消费者"+Thread.currentThread().getName()+" waiting");
+                if(!hasValue){
+                    System.out.println("consumer"+Thread.currentThread().getName()+" waiting");
                     condition.await();
                 }
                 hasValue = false;
-                System.out.println("消费者"+Thread.currentThread().getName()+" Runnable");
+                System.out.println("consumer"+Thread.currentThread().getName()+" Runnable");
                 condition.signalAll();//然后去唤醒因object调用wait方法处于阻塞状态的线程
             } catch (InterruptedException e) {
                 e.printStackTrace();

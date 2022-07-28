@@ -1,0 +1,148 @@
+@startuml
+header Page Header
+footer Page %page% of %lastpage%
+
+title Example Title
+hide footbox
+
+
+Bob ->x Alice
+Bob -> Alice
+Bob ->> Alice
+Bob -\ Alice
+Bob \\- Alice
+Bob //-- Alice
+Bob ->o Alice
+Bob o\\-- Alice
+Bob <-> Alice
+Bob <->o Alice
+
+Bob -[#red]> Alice : hello
+Alice -[#0000FF]->Bob : ok
+
+== xxx ==
+
+Alice -> Bob: Authentication Request
+alt successful case
+Bob -> Alice: Authentication Accepted
+
+else some kind of failure
+Bob -> Alice: Authentication Failure
+
+group My own label
+Alice -> Bob : xxx
+loop 1000 times
+Alice -> Bob: DNS Attack
+end
+Alice -> Bob : xxx
+end
+
+else Another type of failure
+Bob -> Alice: Please repeat
+end
+
+...
+
+
+Alice -> Bob : conReq
+hnote over Alice : idle
+Alice <<-- Bob : conConf
+rnote over Bob
+"r" as rectangle
+"h" as hexagon
+end rnote
+
+...
+
+Alice <<-- Bob : conConf
+note left
+This is **bold**
+This is //italics//
+This is ""monospaced""
+This is --stroked--
+This is __underlined__
+This is ~~waved~~
+end note
+...
+
+ref over Alice, Bob : init
+Alice -> Bob : hello
+ref over Bob
+This can be on
+several lines
+end ref
+...
+
+Alice -> Bob: message 1
+Bob --> Alice: ok
+|||
+Alice -> Bob: message 2
+Bob --> Alice: ok
+||45||
+Alice -> Bob: message 3
+Bob --> Alice: ok
+@enduml
+
+
+
+
+@startuml
+header Page Header
+footer Page %page% of %lastpage%
+title Example Title
+hide footbox
+
+Alice -> Bob : message 1
+Alice -> Bob : message 2
+
+
+newpage A title for the \n last page
+hide footbox
+Alice -> Bob : message 5
+Alice -> Bob : message 6
+
+newpage
+hide footbox
+autonumber "<b>[000]"
+Bob -> Alice : Authentication Request
+Bob <- Alice : Authentication Response
+autonumber 15 "<b>(<u>##</u>)"
+Bob -> Alice : Another authentication Request
+Bob <- Alice : Another authentication Response
+autonumber 40 10 "<font color=red><b>Message 0 "
+Bob -> Alice : Yet another authentication Request
+Bob <- Alice : Yet another authentication Response
+autonumber
+@enduml
+
+@startuml
+actor Foo1
+boundary Foo2
+control Foo3
+entity Foo4
+database Foo5
+collections Foo6
+Foo1 -> Foo2 : To
+Foo1 -> Foo3 : To
+Foo1 -> Foo4 : To
+Foo1 -> Foo5 : To
+Foo1 -> Foo6 : To
+@enduml
+
+@startuml
+[-> A: DoWork
+activate A
+A -> A: Internal call
+activate A
+A ->] : << createRequest >>
+A<--] : RequestCreated
+deactivate A
+[<- A: Done
+deactivate A
+@enduml
+
+@startuml
+participant "Famous Bob" as Bob << Generated >>
+participant Alice << (C,#ADD1B2) Testable >>
+Bob->Alice: First message
+@enduml
